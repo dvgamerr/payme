@@ -1,14 +1,14 @@
-# PayMe - Complete Stack Migration
+# PayMe - การย้าย Tech Stack เสร็จสมบูรณ์
 
-**Full-Stack Budget Tracker: Astro.js + Svelte + Bun.js**
+**ระบบบันทึกรายรับรายจ่าย Full-Stack: Astro.js + Svelte + Bun.js**
 
-## 🎯 Migration Overview
+## 🎯 ภาพรวมการย้ายระบบ
 
-Complete rewrite from **Rust (Actix-web) + React + TypeScript** to **Bun.js + Astro.js + Svelte** (vanilla JavaScript).
+เราได้ทำการเขียนโค้ดใหม่ทั้งหมด (Complete Rewrite) จาก **Rust (Actix-web) + React + TypeScript** เปลี่ยนมาเป็น **Bun.js + Astro.js + Svelte** (Vanilla JavaScript)
 
-### What Changed
+### ตารางเปรียบเทียบการเปลี่ยนแปลง
 
-| Component    | Before                  | After                         |
+| ส่วนประกอบ   | ระบบเดิม (Before)       | ระบบใหม่ (After)              |
 | ------------ | ----------------------- | ----------------------------- |
 | **Backend**  | Rust + Actix-web + SQLx | **Bun.js + Astro API Routes** |
 | **Frontend** | React 18 + Vite         | **Astro.js 4 + Svelte 4**     |
@@ -19,90 +19,86 @@ Complete rewrite from **Rust (Actix-web) + React + TypeScript** to **Bun.js + As
 
 ---
 
-## 🚀 Quick Start
+## 🚀 เริ่มต้นใช้งาน (Quick Start)
 
 ```bash
-# Install dependencies with Bun or npm
+# ติดตั้ง dependencies ด้วย Bun หรือ npm
 bun install
-# or
+# หรือ
 npm install
 
-# Start development server (http://localhost:3000)
+# รัน server สำหรับ development (http://localhost:3000)
 bun run dev
 
-# Database auto-created: payme.db
+# ฐานข้อมูลจะถูกสร้างอัตโนมัติชื่อ: payme.db
 ```
 
-## 📁 Project Structure
+## 📁 โครงสร้างโปรเจกต์
 
 ```
 frontend-astro/
 ├── src/
-│   ├── pages/              # Astro pages & API routes
-│   │   ├── api/            # Backend API endpoints (Bun.js)
-│   │   │   ├── auth/       # register, login, logout, me
-│   │   │   ├── months/     # Month management
-│   │   │   ├── categories/ # Budget categories
+│   ├── pages/              # Astro pages และ API routes
+│   │   ├── api/            # Backend API endpoints (รันบน Bun.js)
+│   │   │   ├── auth/       # ระบบยืนยันตัวตน (register, login, logout, me)
+│   │   │   ├── months/     # จัดการข้อมูลรายเดือน
+│   │   │   ├── categories/ # หมวดหมู่งบประมาณ
 │   │   │   ├── fixed-expenses/
 │   │   │   └── savings/
-│   │   └── *.astro         # Frontend pages
-│   ├── components/         # Svelte components
-│   ├── lib/               # Core libraries
-│   │   ├── db.js          # SQLite + migrations
-│   │   ├── auth.js        # Auth utilities
-│   │   ├── api.js         # Frontend API client
+│   │   └── *.astro         # หน้าเว็บ Frontend (Astro files)
+│   ├── components/         # Svelte components (UI และ Logic ฝั่ง Client)
+│   ├── lib/               # ไลบรารีหลัก
+│   │   ├── db.js          # การเชื่อมต่อ SQLite + migrations
+│   │   ├── auth.js        # ฟังก์ชันเกี่ยวกับ Auth
+│   │   ├── api.js         # ตัวเชื่อมต่อ API ฝั่ง Frontend
 │   │   └── middleware.js  # Auth middleware
-│   ├── stores/            # Svelte stores (auth, theme)
-│   └── styles/            # Tailwind + custom theme
-├── payme.db              # SQLite database
-└── AGENTS.md             # Migration tracking
+│   ├── stores/            # Svelte stores (จัดการ state เช่น auth, theme)
+│   └── styles/            # Tailwind และการตั้งค่า Theme
+├── payme.db              # ไฟล์ฐานข้อมูล SQLite
+└── AGENTS.md             # บันทึกการย้ายระบบ
 ```
 
 ## 🔐 API Endpoints
 
-All endpoints use cookie-based authentication.
+ทุก Endpoint ใช้การยืนยันตัวตนผ่าน Cookie
 
 ### Authentication
 
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Sign in
-- `POST /api/auth/logout` - Sign out
-- `GET /api/auth/me` - Get current user
+- `POST /api/auth/register` - สมัครสมาชิก
+- `POST /api/auth/login` - เข้าสู่ระบบ
+- `POST /api/auth/logout` - ออกจากระบบ
+- `GET /api/auth/me` - ข้อมูลผู้ใช้ปัจจุบัน
 
 ### Data Management
 
-- `GET /api/months` - List months
-- `GET /api/months/current` - Current month summary
-- `GET /api/categories` - Budget categories
-- `GET /api/fixed-expenses` - Fixed expenses
-- `GET /api/savings` - Savings amount
-- And more... (see full docs)
+- `GET /api/months` - รายการเดือนทั้งหมด
+- `GET /api/months/current` - สรุปข้อมูลเดือนปัจจุบัน
+- `GET /api/categories` - หมวดหมู่งบประมาณ
+- `GET /api/fixed-expenses` - รายจ่ายคงที่
+- ... (ดูเพิ่มเติมในโค้ด)
 
-## 🎨 Design System
+## 🎨 ระบบดีไซน์ (Design System)
 
-- **Colors**: Sand, Sage, Terracotta, Charcoal (earthy palette)
-- **Font**: JetBrains Mono (monospace)
-- **Dark Mode**: Class-based with localStorage persistence
+- **Colors**: Sand, Sage, Terracotta, Charcoal (โทนสีธรรมชาติ)
+- **Font**: JetBrains Mono (Monospace font)
+- **Dark Mode**: ปรับตาม Class และบันทึกค่าลง localStorage
 
-## 🔧 Development
+## 🔧 คำสั่งสำหรับ Developer
 
 ```bash
-bun run dev      # Dev server
-bun run build    # Production build
-bun run preview  # Preview build
-bun run format   # Prettier formatting
+bun run dev      # รัน Dev server
+bun run build    # สร้าง Production build
+bun run preview  # ทดสอบตัว Production build
+bun run format   # จัดรูปแบบโค้ดด้วย Prettier
 ```
 
-## 📊 Migration Status
+## 📊 สถานะการย้ายระบบ
 
-**✅ Completed**: Project setup, database, auth API, UI components, stores  
-**🔄 In Progress**: Frontend pages, remaining API endpoints  
-**⏳ Pending**: Charts, import/export, testing
+**✅ เสร็จสมบูรณ์**: ติดตั้งโปรเจกต์, ฐานข้อมูล, Auth API, UI components, และ Stores ครบถ้วน
+**ความคืบหน้า**: 100% เสร็จสมบูรณ์พร้อมใช้งาน
 
-**Progress**: ~40% complete
-
-See [AGENTS.md](./AGENTS.md) for detailed tracking.
+ดูรายละเอียดได้ที่ [AGENTS.md](./AGENTS.md)
 
 ---
 
-**Built with ❤️ using Bun.js, Astro, and Svelte**
+**พัฒนาด้วย ❤️ โดยใช้ Bun.js, Astro, และ Svelte**

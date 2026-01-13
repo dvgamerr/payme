@@ -1,5 +1,5 @@
 <script>
-  import { Plus, Trash2, Edit2, Check, X, Settings } from 'lucide-svelte';
+  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte';
   import { api } from '../lib/api.js';
   import Card from './ui/Card.svelte';
   import Input from './ui/Input.svelte';
@@ -134,7 +134,7 @@
                     on:click={() => startEditBudget(budget)}
                     class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
                   >
-                    <Edit2 size={12} />
+                    <Pen size={12} />
                   </button>
                 {/if}
               </div>
@@ -193,7 +193,7 @@
                 on:click={() => startEditCategory(cat)}
                 class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
               >
-                <Edit2 size={14} />
+                <Pen size={14} />
               </button>
               <button
                 on:click={() => handleDeleteCategory(cat.id)}
