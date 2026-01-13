@@ -5,17 +5,24 @@
  * POST /api/months/[monthId]/income
  * Create income entry
  */
-import { db } from '../../../../lib/db.js';
+import { asc, eq } from 'drizzle-orm';
+import { db, schema } from '../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+
+const { incomeEntries, months } = schema;
 
 export async function GET({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT user_id FROM months WHERE id = ?');
-    const month = monthStmt.get(monthId);
+    const monthRows = await db
+      .select({ user_id: months.userId })
+      .from(months)
+      .where(eq(months.id, monthId))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month || month.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -24,8 +31,16 @@ export async function GET({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare('SELECT * FROM income_entries WHERE month_id = ? ORDER BY id');
-    const entries = stmt.all(monthId);
+    const entries = await db
+      .select({
+        id: incomeEntries.id,
+        month_id: incomeEntries.monthId,
+        label: incomeEntries.label,
+        amount: incomeEntries.amount,
+      })
+      .from(incomeEntries)
+      .where(eq(incomeEntries.monthId, monthId))
+      .orderBy(asc(incomeEntries.id));
 
     return new Response(JSON.stringify(entries), {
       status: 200,
@@ -45,7 +60,7 @@ export async function GET({ params, cookies }) {
 
 export async function POST({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const body = await request.json();
     const { label, amount } = body;
@@ -58,8 +73,12 @@ export async function POST({ params, request, cookies }) {
     }
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT user_id FROM months WHERE id = ?');
-    const month = monthStmt.get(monthId);
+    const monthRows = await db
+      .select({ user_id: months.userId })
+      .from(months)
+      .where(eq(months.id, monthId))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month || month.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -68,15 +87,13 @@ export async function POST({ params, request, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO income_entries (month_id, label, amount)
-      VALUES (?, ?, ?)
-    `);
-
-    const result = stmt.run(monthId, label, amount);
+    const rows = await db
+      .insert(incomeEntries)
+      .values({ monthId, label, amount })
+      .returning({ id: incomeEntries.id });
 
     const entry = {
-      id: result.lastInsertRowid,
+      id: rows[0]?.id,
       month_id: monthId,
       label,
       amount,

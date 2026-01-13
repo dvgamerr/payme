@@ -17,7 +17,7 @@ export async function POST({ request, cookies }) {
     }
 
     const user = await loginUser(username, password);
-    const { sessionId, expiresAt } = createSession(user.id);
+    const { sessionId, expiresAt } = await createSession(user.id);
 
     // Set session cookie
     cookies.set('session_id', sessionId, {

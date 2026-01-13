@@ -5,24 +5,28 @@
  * DELETE /api/months/[monthId]/items/[itemId]
  * Delete spending item
  */
-import { db } from '../../../../../lib/db.js';
+import { and, eq } from 'drizzle-orm';
+import { db, schema } from '../../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
+
+const { budgetCategories, items, months } = schema;
 
 export async function PUT({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const itemId = parseInt(params.itemId);
     const body = await request.json();
     const { category_id, description, amount, spent_on } = body;
 
     // Verify item belongs to user's month
-    const checkStmt = db.prepare(`
-      SELECT i.id FROM items i
-      JOIN months m ON m.id = i.month_id
-      WHERE i.id = ? AND i.month_id = ? AND m.user_id = ?
-    `);
-    const item = checkStmt.get(itemId, monthId, user.id);
+    const checkRows = await db
+      .select({ id: items.id })
+      .from(items)
+      .innerJoin(months, eq(months.id, items.monthId))
+      .where(and(eq(items.id, itemId), eq(items.monthId, monthId), eq(months.userId, user.id)))
+      .limit(1);
+    const item = checkRows[0];
 
     if (!item) {
       return new Response(JSON.stringify({ error: 'Item not found' }), {
@@ -33,8 +37,12 @@ export async function PUT({ params, request, cookies }) {
 
     // If updating category, verify it belongs to user
     if (category_id !== undefined) {
-      const catStmt = db.prepare('SELECT user_id FROM budget_categories WHERE id = ?');
-      const category = catStmt.get(category_id);
+      const categoryRows = await db
+        .select({ user_id: budgetCategories.userId })
+        .from(budgetCategories)
+        .where(eq(budgetCategories.id, category_id))
+        .limit(1);
+      const category = categoryRows[0];
 
       if (!category || category.user_id !== user.id) {
         return new Response(JSON.stringify({ error: 'Category not found' }), {
@@ -44,39 +52,43 @@ export async function PUT({ params, request, cookies }) {
       }
     }
 
-    const updates = [];
-    const params_arr = [];
+    const updates = {};
 
     if (category_id !== undefined) {
-      updates.push('category_id = ?');
-      params_arr.push(category_id);
+      updates.categoryId = category_id;
     }
     if (description !== undefined) {
-      updates.push('description = ?');
-      params_arr.push(description);
+      updates.description = description;
     }
     if (amount !== undefined) {
-      updates.push('amount = ?');
-      params_arr.push(amount);
+      updates.amount = amount;
     }
     if (spent_on !== undefined) {
-      updates.push('spent_on = ?');
-      params_arr.push(spent_on);
+      updates.spentOn = spent_on;
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    params_arr.push(itemId);
-    const stmt = db.prepare(`UPDATE items SET ${updates.join(', ')} WHERE id = ?`);
-    stmt.run(...params_arr);
+    await db.update(items).set(updates).where(eq(items.id, itemId));
 
-    const resultStmt = db.prepare('SELECT * FROM items WHERE id = ?');
-    const updated = resultStmt.get(itemId);
+    const resultRows = await db
+      .select({
+        id: items.id,
+        month_id: items.monthId,
+        category_id: items.categoryId,
+        description: items.description,
+        amount: items.amount,
+        spent_on: items.spentOn,
+      })
+      .from(items)
+      .where(eq(items.id, itemId))
+      .limit(1);
+    const updated = resultRows[0];
 
     return new Response(JSON.stringify(updated), {
       status: 200,
@@ -96,16 +108,17 @@ export async function PUT({ params, request, cookies }) {
 
 export async function DELETE({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const itemId = parseInt(params.itemId);
 
-    const checkStmt = db.prepare(`
-      SELECT i.id FROM items i
-      JOIN months m ON m.id = i.month_id
-      WHERE i.id = ? AND i.month_id = ? AND m.user_id = ?
-    `);
-    const item = checkStmt.get(itemId, monthId, user.id);
+    const checkRows = await db
+      .select({ id: items.id })
+      .from(items)
+      .innerJoin(months, eq(months.id, items.monthId))
+      .where(and(eq(items.id, itemId), eq(items.monthId, monthId), eq(months.userId, user.id)))
+      .limit(1);
+    const item = checkRows[0];
 
     if (!item) {
       return new Response(JSON.stringify({ error: 'Item not found' }), {
@@ -114,8 +127,7 @@ export async function DELETE({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare('DELETE FROM items WHERE id = ?');
-    stmt.run(itemId);
+    await db.delete(items).where(eq(items.id, itemId));
 
     return new Response(null, { status: 204 });
   } catch (error) {

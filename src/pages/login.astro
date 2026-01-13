@@ -4,7 +4,7 @@ import { getUserFromSession } from '../lib/auth.js';
 
 // Check if user is already authenticated
 const sessionId = Astro.cookies.get('session_id')?.value;
-const user = getUserFromSession(sessionId);
+const user = await getUserFromSession(sessionId);
 
 // Redirect to dashboard if authenticated
 if (user) {

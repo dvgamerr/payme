@@ -2,58 +2,97 @@
  * GET /api/months/current
  * Get or create current month with full summary
  */
-import { db } from '../../../lib/db.js';
+import { and, desc, eq, sql } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
 
-function getMonthSummary(monthId, userId) {
-  // Get month
-  const monthStmt = db.prepare('SELECT * FROM months WHERE id = ? AND user_id = ?');
-  const month = monthStmt.get(monthId, userId);
+const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema;
 
+async function getMonthSummary(monthId, userId) {
+  const monthRows = await db
+    .select({
+      id: months.id,
+      user_id: months.userId,
+      year: months.year,
+      month: months.month,
+      is_closed: months.isClosed,
+      closed_at: months.closedAt,
+    })
+    .from(months)
+    .where(and(eq(months.id, monthId), eq(months.userId, userId)))
+    .limit(1);
+
+  const month = monthRows[0];
   if (!month) return null;
 
   month.is_closed = Boolean(month.is_closed);
 
-  // Get income entries
-  const incomeStmt = db.prepare('SELECT * FROM income_entries WHERE month_id = ?');
-  const income_entries = incomeStmt.all(monthId);
+  const income_entries = await db
+    .select({
+      id: incomeEntries.id,
+      month_id: incomeEntries.monthId,
+      label: incomeEntries.label,
+      amount: incomeEntries.amount,
+    })
+    .from(incomeEntries)
+    .where(eq(incomeEntries.monthId, monthId));
 
-  // Get fixed expenses
-  const fixedStmt = db.prepare('SELECT * FROM fixed_expenses WHERE user_id = ?');
-  const fixed_expenses = fixedStmt.all(userId);
+  const fixed_expenses = await db
+    .select({
+      id: fixedExpenses.id,
+      user_id: fixedExpenses.userId,
+      label: fixedExpenses.label,
+      amount: fixedExpenses.amount,
+    })
+    .from(fixedExpenses)
+    .where(eq(fixedExpenses.userId, userId));
 
-  // Get budgets with categories and spent amounts
-  const budgetsStmt = db.prepare(`
-    SELECT
-      mb.id,
-      mb.month_id,
-      mb.category_id,
-      bc.label as category_label,
-      mb.allocated_amount,
-      COALESCE(SUM(i.amount), 0) as spent_amount
-    FROM monthly_budgets mb
-    JOIN budget_categories bc ON bc.id = mb.category_id
-    LEFT JOIN items i ON i.category_id = mb.category_id AND i.month_id = mb.month_id
-    WHERE mb.month_id = ?
-    GROUP BY mb.id, mb.month_id, mb.category_id, bc.label, mb.allocated_amount
-  `);
-  const budgets = budgetsStmt.all(monthId);
+  const budgets = await db
+    .select({
+      id: monthlyBudgets.id,
+      month_id: monthlyBudgets.monthId,
+      category_id: monthlyBudgets.categoryId,
+      category_label: budgetCategories.label,
+      allocated_amount: monthlyBudgets.allocatedAmount,
+      spent_amount: sql`COALESCE(SUM(${items.amount}), 0)`,
+    })
+    .from(monthlyBudgets)
+    .innerJoin(budgetCategories, eq(budgetCategories.id, monthlyBudgets.categoryId))
+    .leftJoin(
+      items,
+      and(
+        eq(items.categoryId, monthlyBudgets.categoryId),
+        eq(items.monthId, monthlyBudgets.monthId)
+      )
+    )
+    .where(eq(monthlyBudgets.monthId, monthId))
+    .groupBy(
+      monthlyBudgets.id,
+      monthlyBudgets.monthId,
+      monthlyBudgets.categoryId,
+      budgetCategories.label,
+      monthlyBudgets.allocatedAmount
+    );
 
-  // Get items with category labels
-  const itemsStmt = db.prepare(`
-    SELECT i.*, bc.label as category_label
-    FROM items i
-    JOIN budget_categories bc ON bc.id = i.category_id
-    WHERE i.month_id = ?
-    ORDER BY i.spent_on DESC
-  `);
-  const items = itemsStmt.all(monthId);
+  const itemsRows = await db
+    .select({
+      id: items.id,
+      month_id: items.monthId,
+      category_id: items.categoryId,
+      description: items.description,
+      amount: items.amount,
+      spent_on: items.spentOn,
+      category_label: budgetCategories.label,
+    })
+    .from(items)
+    .innerJoin(budgetCategories, eq(budgetCategories.id, items.categoryId))
+    .where(eq(items.monthId, monthId))
+    .orderBy(desc(items.spentOn), desc(items.id));
 
-  // Calculate totals
   const total_income = income_entries.reduce((sum, e) => sum + e.amount, 0);
   const total_fixed = fixed_expenses.reduce((sum, e) => sum + e.amount, 0);
   const total_budgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0);
-  const total_spent = items.reduce((sum, i) => sum + i.amount, 0);
+  const total_spent = itemsRows.reduce((sum, i) => sum + i.amount, 0);
   const remaining = total_income - total_fixed - total_spent;
 
   return {
@@ -61,7 +100,7 @@ function getMonthSummary(monthId, userId) {
     income_entries,
     fixed_expenses,
     budgets,
-    items,
+    items: itemsRows,
     total_income,
     total_fixed,
     total_budgeted,
@@ -72,43 +111,42 @@ function getMonthSummary(monthId, userId) {
 
 export async function GET({ cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth() + 1; // JavaScript months are 0-indexed
+    const month = now.getMonth() + 1;
 
-    // Try to get existing month
-    let monthStmt = db.prepare(`
-      SELECT id FROM months WHERE user_id = ? AND year = ? AND month = ?
-    `);
-    let result = monthStmt.get(user.id, year, month);
+    const existingRows = await db
+      .select({ id: months.id })
+      .from(months)
+      .where(and(eq(months.userId, user.id), eq(months.year, year), eq(months.month, month)))
+      .limit(1);
+    let result = existingRows[0];
 
-    // Create month if doesn't exist
     if (!result) {
-      const insertStmt = db.prepare(`
-        INSERT INTO months (user_id, year, month)
-        VALUES (?, ?, ?)
-      `);
-      const insertResult = insertStmt.run(user.id, year, month);
-      result = { id: insertResult.lastInsertRowid };
+      const inserted = await db
+        .insert(months)
+        .values({ userId: user.id, year, month })
+        .returning({ id: months.id });
+      result = inserted[0];
 
-      // Create monthly budgets from category defaults
-      const categoriesStmt = db.prepare(
-        'SELECT id, default_amount FROM budget_categories WHERE user_id = ?'
-      );
-      const categories = categoriesStmt.all(user.id);
+      const categories = await db
+        .select({ id: budgetCategories.id, default_amount: budgetCategories.defaultAmount })
+        .from(budgetCategories)
+        .where(eq(budgetCategories.userId, user.id));
 
-      const budgetInsert = db.prepare(`
-        INSERT INTO monthly_budgets (month_id, category_id, allocated_amount)
-        VALUES (?, ?, ?)
-      `);
-
-      for (const category of categories) {
-        budgetInsert.run(result.id, category.id, category.default_amount);
+      if (categories.length > 0) {
+        await db.insert(monthlyBudgets).values(
+          categories.map((category) => ({
+            monthId: result.id,
+            categoryId: category.id,
+            allocatedAmount: category.default_amount,
+          }))
+        );
       }
     }
 
-    const summary = getMonthSummary(result.id, user.id);
+    const summary = await getMonthSummary(result.id, user.id);
 
     return new Response(JSON.stringify(summary), {
       status: 200,

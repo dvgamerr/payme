@@ -5,18 +5,25 @@
  * DELETE /api/fixed-expenses/[id]
  * Delete fixed expense
  */
-import { db } from '../../../lib/db.js';
+import { eq } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { fixedExpenses } = schema;
 
 export async function PUT({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const id = parseInt(params.id);
     const body = await request.json();
     const { label, amount } = body;
 
-    const checkStmt = db.prepare('SELECT user_id FROM fixed_expenses WHERE id = ?');
-    const expense = checkStmt.get(id);
+    const checkRows = await db
+      .select({ user_id: fixedExpenses.userId })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.id, id))
+      .limit(1);
+    const expense = checkRows[0];
 
     if (!expense || expense.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Fixed expense not found' }), {
@@ -25,31 +32,35 @@ export async function PUT({ params, request, cookies }) {
       });
     }
 
-    const updates = [];
-    const params_arr = [];
+    const updates = {};
 
     if (label !== undefined) {
-      updates.push('label = ?');
-      params_arr.push(label);
+      updates.label = label;
     }
     if (amount !== undefined) {
-      updates.push('amount = ?');
-      params_arr.push(amount);
+      updates.amount = amount;
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    params_arr.push(id);
-    const stmt = db.prepare(`UPDATE fixed_expenses SET ${updates.join(', ')} WHERE id = ?`);
-    stmt.run(...params_arr);
+    await db.update(fixedExpenses).set(updates).where(eq(fixedExpenses.id, id));
 
-    const resultStmt = db.prepare('SELECT * FROM fixed_expenses WHERE id = ?');
-    const updated = resultStmt.get(id);
+    const resultRows = await db
+      .select({
+        id: fixedExpenses.id,
+        user_id: fixedExpenses.userId,
+        label: fixedExpenses.label,
+        amount: fixedExpenses.amount,
+      })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.id, id))
+      .limit(1);
+    const updated = resultRows[0];
 
     return new Response(JSON.stringify(updated), {
       status: 200,
@@ -69,11 +80,15 @@ export async function PUT({ params, request, cookies }) {
 
 export async function DELETE({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const id = parseInt(params.id);
 
-    const checkStmt = db.prepare('SELECT user_id FROM fixed_expenses WHERE id = ?');
-    const expense = checkStmt.get(id);
+    const checkRows = await db
+      .select({ user_id: fixedExpenses.userId })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.id, id))
+      .limit(1);
+    const expense = checkRows[0];
 
     if (!expense || expense.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Fixed expense not found' }), {
@@ -82,8 +97,7 @@ export async function DELETE({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare('DELETE FROM fixed_expenses WHERE id = ?');
-    stmt.run(id);
+    await db.delete(fixedExpenses).where(eq(fixedExpenses.id, id));
 
     return new Response(null, { status: 204 });
   } catch (error) {

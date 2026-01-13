@@ -3,7 +3,10 @@
  * JWT-based session management with cookie storage
  */
 import bcrypt from 'bcrypt';
-import { db } from './db.js';
+import { and, eq, gt, lte } from 'drizzle-orm';
+import { db, nowSql, schema } from './db.js';
+
+const { sessions, users } = schema;
 
 const SALT_ROUNDS = 10;
 const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -32,16 +35,15 @@ export async function verifyPassword(password, hash) {
 /**
  * Create new session for user
  */
-export function createSession(userId) {
+export async function createSession(userId) {
   const sessionId = generateSessionId();
   const expiresAt = new Date(Date.now() + SESSION_DURATION).toISOString();
 
-  const stmt = db.prepare(`
-    INSERT INTO sessions (id, user_id, expires_at)
-    VALUES (?, ?, ?)
-  `);
-
-  stmt.run(sessionId, userId, expiresAt);
+  await db.insert(sessions).values({
+    id: sessionId,
+    userId,
+    expiresAt,
+  });
 
   return { sessionId, expiresAt };
 }
@@ -49,36 +51,41 @@ export function createSession(userId) {
 /**
  * Get user from session ID
  */
-export function getUserFromSession(sessionId) {
+export async function getUserFromSession(sessionId) {
   if (!sessionId) return null;
 
-  const stmt = db.prepare(`
-    SELECT users.id, users.username, users.savings, users.retirement_savings
-    FROM sessions
-    JOIN users ON users.id = sessions.user_id
-    WHERE sessions.id = ?
-      AND sessions.expires_at > datetime('now')
-  `);
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      savings: users.savings,
+      retirementSavings: users.retirementSavings,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, nowSql)))
+    .limit(1);
 
-  return stmt.get(sessionId);
+  return rows[0] ?? null;
 }
 
 /**
  * Delete session (logout)
  */
-export function deleteSession(sessionId) {
-  const stmt = db.prepare('DELETE FROM sessions WHERE id = ?');
-  stmt.run(sessionId);
+export async function deleteSession(sessionId) {
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
 }
 
 /**
  * Clean up expired sessions
  */
-export function cleanupExpiredSessions() {
-  const stmt = db.prepare("DELETE FROM sessions WHERE expires_at <= datetime('now')");
-  const result = stmt.run();
-  if (result.changes > 0) {
-    console.log(`🧹 Cleaned up ${result.changes} expired sessions`);
+export async function cleanupExpiredSessions() {
+  const deleted = await db
+    .delete(sessions)
+    .where(lte(sessions.expiresAt, nowSql))
+    .returning({ id: sessions.id });
+  if (deleted.length > 0) {
+    console.log(`Cleaned up ${deleted.length} expired sessions`);
   }
 }
 
@@ -88,16 +95,18 @@ export function cleanupExpiredSessions() {
 export async function registerUser(username, password) {
   const passwordHash = await hashPassword(password);
 
-  const stmt = db.prepare(`
-    INSERT INTO users (username, password_hash)
-    VALUES (?, ?)
-  `);
-
   try {
-    const result = stmt.run(username, passwordHash);
-    return { id: result.lastInsertRowid, username };
+    const rows = await db
+      .insert(users)
+      .values({ username, passwordHash })
+      .returning({ id: users.id, username: users.username });
+    return rows[0];
   } catch (error) {
-    if (error.message.includes('UNIQUE constraint failed')) {
+    if (
+      error?.code === 'SQLITE_CONSTRAINT_UNIQUE' ||
+      error?.code === '23505' ||
+      error?.message?.includes('UNIQUE constraint failed')
+    ) {
       throw new Error('Username already exists');
     }
     throw error;
@@ -108,19 +117,22 @@ export async function registerUser(username, password) {
  * Login user
  */
 export async function loginUser(username, password) {
-  const stmt = db.prepare(`
-    SELECT id, username, password_hash
-    FROM users
-    WHERE username = ?
-  `);
-
-  const user = stmt.get(username);
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      passwordHash: users.passwordHash,
+    })
+    .from(users)
+    .where(eq(users.username, username))
+    .limit(1);
+  const user = rows[0];
 
   if (!user) {
     throw new Error('Invalid credentials');
   }
 
-  const isValid = await verifyPassword(password, user.password_hash);
+  const isValid = await verifyPassword(password, user.passwordHash);
 
   if (!isValid) {
     throw new Error('Invalid credentials');
@@ -130,4 +142,9 @@ export async function loginUser(username, password) {
 }
 
 // Run cleanup every 6 hours
-setInterval(cleanupExpiredSessions, 6 * 60 * 60 * 1000);
+setInterval(
+  () => {
+    cleanupExpiredSessions().catch((error) => console.error('Session cleanup failed:', error));
+  },
+  6 * 60 * 60 * 1000
+);

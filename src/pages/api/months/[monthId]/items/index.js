@@ -5,17 +5,24 @@
  * POST /api/months/[monthId]/items
  * Create spending item
  */
-import { db } from '../../../../lib/db.js';
+import { desc, eq } from 'drizzle-orm';
+import { db, schema } from '../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+
+const { budgetCategories, items, months } = schema;
 
 export async function GET({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT user_id FROM months WHERE id = ?');
-    const month = monthStmt.get(monthId);
+    const monthRows = await db
+      .select({ user_id: months.userId })
+      .from(months)
+      .where(eq(months.id, monthId))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month || month.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -24,16 +31,22 @@ export async function GET({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      SELECT i.*, bc.label as category_label
-      FROM items i
-      JOIN budget_categories bc ON bc.id = i.category_id
-      WHERE i.month_id = ?
-      ORDER BY i.spent_on DESC, i.id DESC
-    `);
-    const items = stmt.all(monthId);
+    const itemsRows = await db
+      .select({
+        id: items.id,
+        month_id: items.monthId,
+        category_id: items.categoryId,
+        description: items.description,
+        amount: items.amount,
+        spent_on: items.spentOn,
+        category_label: budgetCategories.label,
+      })
+      .from(items)
+      .innerJoin(budgetCategories, eq(budgetCategories.id, items.categoryId))
+      .where(eq(items.monthId, monthId))
+      .orderBy(desc(items.spentOn), desc(items.id));
 
-    return new Response(JSON.stringify(items), {
+    return new Response(JSON.stringify(itemsRows), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -51,7 +64,7 @@ export async function GET({ params, cookies }) {
 
 export async function POST({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const body = await request.json();
     const { category_id, description, amount, spent_on } = body;
@@ -67,8 +80,12 @@ export async function POST({ params, request, cookies }) {
     }
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT user_id FROM months WHERE id = ?');
-    const month = monthStmt.get(monthId);
+    const monthRows = await db
+      .select({ user_id: months.userId })
+      .from(months)
+      .where(eq(months.id, monthId))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month || month.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -78,8 +95,12 @@ export async function POST({ params, request, cookies }) {
     }
 
     // Verify category belongs to user
-    const catStmt = db.prepare('SELECT user_id FROM budget_categories WHERE id = ?');
-    const category = catStmt.get(category_id);
+    const categoryRows = await db
+      .select({ user_id: budgetCategories.userId })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.id, category_id))
+      .limit(1);
+    const category = categoryRows[0];
 
     if (!category || category.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Category not found' }), {
@@ -88,15 +109,19 @@ export async function POST({ params, request, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO items (month_id, category_id, description, amount, spent_on)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(monthId, category_id, description, amount, spent_on);
+    const rows = await db
+      .insert(items)
+      .values({
+        monthId,
+        categoryId: category_id,
+        description,
+        amount,
+        spentOn: spent_on,
+      })
+      .returning({ id: items.id });
 
     const item = {
-      id: result.lastInsertRowid,
+      id: rows[0]?.id,
       month_id: monthId,
       category_id,
       description,

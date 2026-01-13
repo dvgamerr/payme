@@ -2,26 +2,34 @@
  * GET /api/months
  * List all months for current user
  */
-import { db } from '../../../lib/db.js';
+import { desc, eq } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { months } = schema;
 
 export async function GET({ cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
+    const rows = await db
+      .select({
+        id: months.id,
+        user_id: months.userId,
+        year: months.year,
+        month: months.month,
+        is_closed: months.isClosed,
+        closed_at: months.closedAt,
+      })
+      .from(months)
+      .where(eq(months.userId, user.id))
+      .orderBy(desc(months.year), desc(months.month));
 
-    const stmt = db.prepare(`
-      SELECT id, user_id, year, month, is_closed, closed_at
-      FROM months
-      WHERE user_id = ?
-      ORDER BY year DESC, month DESC
-    `);
-
-    const months = stmt.all(user.id).map((m) => ({
+    const result = rows.map((m) => ({
       ...m,
       is_closed: Boolean(m.is_closed),
     }));
 
-    return new Response(JSON.stringify(months), {
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

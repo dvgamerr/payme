@@ -5,19 +5,26 @@
  * DELETE /api/categories/[id]
  * Delete budget category
  */
-import { db } from '../../../lib/db.js';
+import { eq } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { budgetCategories } = schema;
 
 export async function PUT({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const id = parseInt(params.id);
     const body = await request.json();
     const { label, default_amount } = body;
 
     // Verify category belongs to user
-    const checkStmt = db.prepare('SELECT user_id FROM budget_categories WHERE id = ?');
-    const category = checkStmt.get(id);
+    const checkRows = await db
+      .select({ user_id: budgetCategories.userId })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.id, id))
+      .limit(1);
+    const category = checkRows[0];
 
     if (!category || category.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Category not found' }), {
@@ -26,31 +33,35 @@ export async function PUT({ params, request, cookies }) {
       });
     }
 
-    const updates = [];
-    const params_arr = [];
+    const updates = {};
 
     if (label !== undefined) {
-      updates.push('label = ?');
-      params_arr.push(label);
+      updates.label = label;
     }
     if (default_amount !== undefined) {
-      updates.push('default_amount = ?');
-      params_arr.push(default_amount);
+      updates.defaultAmount = default_amount;
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    params_arr.push(id);
-    const stmt = db.prepare(`UPDATE budget_categories SET ${updates.join(', ')} WHERE id = ?`);
-    stmt.run(...params_arr);
+    await db.update(budgetCategories).set(updates).where(eq(budgetCategories.id, id));
 
-    const resultStmt = db.prepare('SELECT * FROM budget_categories WHERE id = ?');
-    const updated = resultStmt.get(id);
+    const resultRows = await db
+      .select({
+        id: budgetCategories.id,
+        user_id: budgetCategories.userId,
+        label: budgetCategories.label,
+        default_amount: budgetCategories.defaultAmount,
+      })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.id, id))
+      .limit(1);
+    const updated = resultRows[0];
 
     return new Response(JSON.stringify(updated), {
       status: 200,
@@ -70,12 +81,16 @@ export async function PUT({ params, request, cookies }) {
 
 export async function DELETE({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const id = parseInt(params.id);
 
     // Verify category belongs to user
-    const checkStmt = db.prepare('SELECT user_id FROM budget_categories WHERE id = ?');
-    const category = checkStmt.get(id);
+    const checkRows = await db
+      .select({ user_id: budgetCategories.userId })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.id, id))
+      .limit(1);
+    const category = checkRows[0];
 
     if (!category || category.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Category not found' }), {
@@ -84,8 +99,7 @@ export async function DELETE({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare('DELETE FROM budget_categories WHERE id = ?');
-    stmt.run(id);
+    await db.delete(budgetCategories).where(eq(budgetCategories.id, id));
 
     return new Response(null, { status: 204 });
   } catch (error) {

@@ -5,21 +5,25 @@
  * POST /api/fixed-expenses
  * Create new fixed expense
  */
-import { db } from '../../../lib/db.js';
+import { asc, eq } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { fixedExpenses } = schema;
 
 export async function GET({ cookies }) {
   try {
-    const user = requireAuth(cookies);
-
-    const stmt = db.prepare(`
-      SELECT id, user_id, label, amount
-      FROM fixed_expenses
-      WHERE user_id = ?
-      ORDER BY label
-    `);
-
-    const expenses = stmt.all(user.id);
+    const user = await requireAuth(cookies);
+    const expenses = await db
+      .select({
+        id: fixedExpenses.id,
+        user_id: fixedExpenses.userId,
+        label: fixedExpenses.label,
+        amount: fixedExpenses.amount,
+      })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.userId, user.id))
+      .orderBy(asc(fixedExpenses.label));
 
     return new Response(JSON.stringify(expenses), {
       status: 200,
@@ -39,7 +43,7 @@ export async function GET({ cookies }) {
 
 export async function POST({ request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const body = await request.json();
     const { label, amount } = body;
 
@@ -50,15 +54,13 @@ export async function POST({ request, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO fixed_expenses (user_id, label, amount)
-      VALUES (?, ?, ?)
-    `);
-
-    const result = stmt.run(user.id, label, amount);
+    const rows = await db
+      .insert(fixedExpenses)
+      .values({ userId: user.id, label, amount })
+      .returning({ id: fixedExpenses.id });
 
     const expense = {
-      id: result.lastInsertRowid,
+      id: rows[0]?.id,
       user_id: user.id,
       label,
       amount,

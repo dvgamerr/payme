@@ -2,17 +2,24 @@
  * GET /api/months/[monthId]/budgets
  * List monthly budget allocations
  */
-import { db } from '../../../../lib/db.js';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { db, schema } from '../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+
+const { budgetCategories, items, monthlyBudgets, months } = schema;
 
 export async function GET({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT user_id FROM months WHERE id = ?');
-    const month = monthStmt.get(monthId);
+    const monthRows = await db
+      .select({ user_id: months.userId })
+      .from(months)
+      .where(eq(months.id, monthId))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month || month.user_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -21,23 +28,33 @@ export async function GET({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      SELECT
-        mb.id,
-        mb.month_id,
-        mb.category_id,
-        bc.label as category_label,
-        mb.allocated_amount,
-        COALESCE(SUM(i.amount), 0) as spent_amount
-      FROM monthly_budgets mb
-      JOIN budget_categories bc ON bc.id = mb.category_id
-      LEFT JOIN items i ON i.category_id = mb.category_id AND i.month_id = mb.month_id
-      WHERE mb.month_id = ?
-      GROUP BY mb.id, mb.month_id, mb.category_id, bc.label, mb.allocated_amount
-      ORDER BY bc.label
-    `);
-
-    const budgets = stmt.all(monthId);
+    const budgets = await db
+      .select({
+        id: monthlyBudgets.id,
+        month_id: monthlyBudgets.monthId,
+        category_id: monthlyBudgets.categoryId,
+        category_label: budgetCategories.label,
+        allocated_amount: monthlyBudgets.allocatedAmount,
+        spent_amount: sql`COALESCE(SUM(${items.amount}), 0)`,
+      })
+      .from(monthlyBudgets)
+      .innerJoin(budgetCategories, eq(budgetCategories.id, monthlyBudgets.categoryId))
+      .leftJoin(
+        items,
+        and(
+          eq(items.categoryId, monthlyBudgets.categoryId),
+          eq(items.monthId, monthlyBudgets.monthId)
+        )
+      )
+      .where(eq(monthlyBudgets.monthId, monthId))
+      .groupBy(
+        monthlyBudgets.id,
+        monthlyBudgets.monthId,
+        monthlyBudgets.categoryId,
+        budgetCategories.label,
+        monthlyBudgets.allocatedAmount
+      )
+      .orderBy(asc(budgetCategories.label));
 
     return new Response(JSON.stringify(budgets), {
       status: 200,

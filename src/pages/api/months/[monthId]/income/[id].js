@@ -5,24 +5,34 @@
  * DELETE /api/months/[monthId]/income/[id]
  * Delete income entry
  */
-import { db } from '../../../../../lib/db.js';
+import { and, eq } from 'drizzle-orm';
+import { db, schema } from '../../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
+
+const { incomeEntries, months } = schema;
 
 export async function PUT({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const id = parseInt(params.id);
     const body = await request.json();
     const { label, amount } = body;
 
     // Verify income belongs to user's month
-    const checkStmt = db.prepare(`
-      SELECT ie.id FROM income_entries ie
-      JOIN months m ON m.id = ie.month_id
-      WHERE ie.id = ? AND ie.month_id = ? AND m.user_id = ?
-    `);
-    const income = checkStmt.get(id, monthId, user.id);
+    const checkRows = await db
+      .select({ id: incomeEntries.id })
+      .from(incomeEntries)
+      .innerJoin(months, eq(months.id, incomeEntries.monthId))
+      .where(
+        and(
+          eq(incomeEntries.id, id),
+          eq(incomeEntries.monthId, monthId),
+          eq(months.userId, user.id)
+        )
+      )
+      .limit(1);
+    const income = checkRows[0];
 
     if (!income) {
       return new Response(JSON.stringify({ error: 'Income not found' }), {
@@ -31,31 +41,35 @@ export async function PUT({ params, request, cookies }) {
       });
     }
 
-    const updates = [];
-    const params_arr = [];
+    const updates = {};
 
     if (label !== undefined) {
-      updates.push('label = ?');
-      params_arr.push(label);
+      updates.label = label;
     }
     if (amount !== undefined) {
-      updates.push('amount = ?');
-      params_arr.push(amount);
+      updates.amount = amount;
     }
 
-    if (updates.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    params_arr.push(id);
-    const stmt = db.prepare(`UPDATE income_entries SET ${updates.join(', ')} WHERE id = ?`);
-    stmt.run(...params_arr);
+    await db.update(incomeEntries).set(updates).where(eq(incomeEntries.id, id));
 
-    const resultStmt = db.prepare('SELECT * FROM income_entries WHERE id = ?');
-    const updated = resultStmt.get(id);
+    const resultRows = await db
+      .select({
+        id: incomeEntries.id,
+        month_id: incomeEntries.monthId,
+        label: incomeEntries.label,
+        amount: incomeEntries.amount,
+      })
+      .from(incomeEntries)
+      .where(eq(incomeEntries.id, id))
+      .limit(1);
+    const updated = resultRows[0];
 
     return new Response(JSON.stringify(updated), {
       status: 200,
@@ -75,16 +89,23 @@ export async function PUT({ params, request, cookies }) {
 
 export async function DELETE({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const id = parseInt(params.id);
 
-    const checkStmt = db.prepare(`
-      SELECT ie.id FROM income_entries ie
-      JOIN months m ON m.id = ie.month_id
-      WHERE ie.id = ? AND ie.month_id = ? AND m.user_id = ?
-    `);
-    const income = checkStmt.get(id, monthId, user.id);
+    const checkRows = await db
+      .select({ id: incomeEntries.id })
+      .from(incomeEntries)
+      .innerJoin(months, eq(months.id, incomeEntries.monthId))
+      .where(
+        and(
+          eq(incomeEntries.id, id),
+          eq(incomeEntries.monthId, monthId),
+          eq(months.userId, user.id)
+        )
+      )
+      .limit(1);
+    const income = checkRows[0];
 
     if (!income) {
       return new Response(JSON.stringify({ error: 'Income not found' }), {
@@ -93,8 +114,7 @@ export async function DELETE({ params, cookies }) {
       });
     }
 
-    const stmt = db.prepare('DELETE FROM income_entries WHERE id = ?');
-    stmt.run(id);
+    await db.delete(incomeEntries).where(eq(incomeEntries.id, id));
 
     return new Response(null, { status: 204 });
   } catch (error) {

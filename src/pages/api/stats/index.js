@@ -2,19 +2,20 @@
  * GET /api/stats
  * Get statistics: category comparisons and monthly trends
  */
-import { db } from '../../../lib/db.js';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { budgetCategories, fixedExpenses, incomeEntries, items, months } = schema;
 
 export async function GET({ cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
 
-    // Get current month/year
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Get previous month
     let prevYear = currentYear;
     let prevMonth = currentMonth - 1;
     if (prevMonth === 0) {
@@ -22,95 +23,132 @@ export async function GET({ cookies }) {
       prevYear--;
     }
 
-    // Category comparisons (current vs previous month)
-    const categoryStmt = db.prepare(`
-      SELECT
-        bc.id as category_id,
-        bc.label as category_label,
-        COALESCE(current_spent.amount, 0) as current_month_spent,
-        COALESCE(prev_spent.amount, 0) as previous_month_spent,
-        COALESCE(current_spent.amount, 0) - COALESCE(prev_spent.amount, 0) as change_amount,
-        CASE
-          WHEN COALESCE(prev_spent.amount, 0) = 0 THEN NULL
-          ELSE ((COALESCE(current_spent.amount, 0) - COALESCE(prev_spent.amount, 0)) / prev_spent.amount) * 100
-        END as change_percent
-      FROM budget_categories bc
-      LEFT JOIN (
-        SELECT i.category_id, SUM(i.amount) as amount
-        FROM items i
-        JOIN months m ON m.id = i.month_id
-        WHERE m.user_id = ? AND m.year = ? AND m.month = ?
-        GROUP BY i.category_id
-      ) current_spent ON current_spent.category_id = bc.id
-      LEFT JOIN (
-        SELECT i.category_id, SUM(i.amount) as amount
-        FROM items i
-        JOIN months m ON m.id = i.month_id
-        WHERE m.user_id = ? AND m.year = ? AND m.month = ?
-        GROUP BY i.category_id
-      ) prev_spent ON prev_spent.category_id = bc.id
-      WHERE bc.user_id = ?
-      ORDER BY bc.label
-    `);
+    const categories = await db
+      .select({ id: budgetCategories.id, label: budgetCategories.label })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.userId, user.id))
+      .orderBy(asc(budgetCategories.label));
 
-    const category_comparisons = categoryStmt.all(
-      user.id,
-      currentYear,
-      currentMonth,
-      user.id,
-      prevYear,
-      prevMonth,
-      user.id
-    );
-
-    // Monthly trends (last 12 months)
-    const trendsStmt = db.prepare(`
-      SELECT
-        m.year,
-        m.month,
-        COALESCE(SUM(ie.amount), 0) as total_income,
-        COALESCE(SUM(i.amount), 0) as total_spent,
-        COALESCE(SUM(fe.amount), 0) as total_fixed,
-        COALESCE(SUM(ie.amount), 0) - COALESCE(SUM(i.amount), 0) - COALESCE(SUM(fe.amount), 0) as net
-      FROM months m
-      LEFT JOIN income_entries ie ON ie.month_id = m.id
-      LEFT JOIN items i ON i.month_id = m.id
-      LEFT JOIN fixed_expenses fe ON fe.user_id = m.user_id
-      WHERE m.user_id = ?
-      GROUP BY m.id, m.year, m.month
-      ORDER BY m.year DESC, m.month DESC
-      LIMIT 12
-    `);
-
-    const monthly_trends = trendsStmt.all(user.id);
-
-    // Calculate averages
-    const avgStmt = db.prepare(`
-      SELECT
-        AVG(monthly_spending) as average_monthly_spending,
-        AVG(monthly_income) as average_monthly_income
-      FROM (
-        SELECT
-          m.id,
-          COALESCE(SUM(i.amount), 0) as monthly_spending,
-          COALESCE(SUM(ie.amount), 0) as monthly_income
-        FROM months m
-        LEFT JOIN items i ON i.month_id = m.id
-        LEFT JOIN income_entries ie ON ie.month_id = m.id
-        WHERE m.user_id = ?
-        GROUP BY m.id
-        LIMIT 12
+    const currentSpent = await db
+      .select({
+        category_id: items.categoryId,
+        amount: sql`COALESCE(SUM(${items.amount}), 0)`,
+      })
+      .from(items)
+      .innerJoin(months, eq(months.id, items.monthId))
+      .where(
+        and(
+          eq(months.userId, user.id),
+          eq(months.year, currentYear),
+          eq(months.month, currentMonth)
+        )
       )
-    `);
+      .groupBy(items.categoryId);
 
-    const averages = avgStmt.get(user.id);
+    const prevSpent = await db
+      .select({
+        category_id: items.categoryId,
+        amount: sql`COALESCE(SUM(${items.amount}), 0)`,
+      })
+      .from(items)
+      .innerJoin(months, eq(months.id, items.monthId))
+      .where(
+        and(eq(months.userId, user.id), eq(months.year, prevYear), eq(months.month, prevMonth))
+      )
+      .groupBy(items.categoryId);
+
+    const currentMap = new Map(
+      currentSpent.map((row) => [row.category_id, Number(row.amount || 0)])
+    );
+    const prevMap = new Map(prevSpent.map((row) => [row.category_id, Number(row.amount || 0)]));
+
+    const category_comparisons = categories.map((category) => {
+      const currentAmount = currentMap.get(category.id) ?? 0;
+      const prevAmount = prevMap.get(category.id) ?? 0;
+      const changeAmount = currentAmount - prevAmount;
+      const changePercent = prevAmount === 0 ? null : (changeAmount / prevAmount) * 100;
+      return {
+        category_id: category.id,
+        category_label: category.label,
+        current_month_spent: currentAmount,
+        previous_month_spent: prevAmount,
+        change_amount: changeAmount,
+        change_percent: changePercent,
+      };
+    });
+
+    const monthRows = await db
+      .select({ id: months.id, year: months.year, month: months.month })
+      .from(months)
+      .where(eq(months.userId, user.id))
+      .orderBy(desc(months.year), desc(months.month))
+      .limit(12);
+
+    const monthIds = monthRows.map((row) => row.id);
+    const incomeByMonth = new Map();
+    const spentByMonth = new Map();
+
+    if (monthIds.length > 0) {
+      const incomeRows = await db
+        .select({
+          month_id: incomeEntries.monthId,
+          total_income: sql`COALESCE(SUM(${incomeEntries.amount}), 0)`,
+        })
+        .from(incomeEntries)
+        .where(inArray(incomeEntries.monthId, monthIds))
+        .groupBy(incomeEntries.monthId);
+      for (const row of incomeRows) {
+        incomeByMonth.set(row.month_id, Number(row.total_income || 0));
+      }
+
+      const spentRows = await db
+        .select({
+          month_id: items.monthId,
+          total_spent: sql`COALESCE(SUM(${items.amount}), 0)`,
+        })
+        .from(items)
+        .where(inArray(items.monthId, monthIds))
+        .groupBy(items.monthId);
+      for (const row of spentRows) {
+        spentByMonth.set(row.month_id, Number(row.total_spent || 0));
+      }
+    }
+
+    const fixedRows = await db
+      .select({ amount: sql`COALESCE(SUM(${fixedExpenses.amount}), 0)` })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.userId, user.id));
+    const totalFixed = Number(fixedRows[0]?.amount || 0);
+
+    const monthly_trends = monthRows.map((row) => {
+      const total_income = incomeByMonth.get(row.id) ?? 0;
+      const total_spent = spentByMonth.get(row.id) ?? 0;
+      const total_fixed = totalFixed;
+      return {
+        year: row.year,
+        month: row.month,
+        total_income,
+        total_spent,
+        total_fixed,
+        net: total_income - total_spent - total_fixed,
+      };
+    });
+
+    const average_monthly_spending =
+      monthly_trends.length > 0
+        ? monthly_trends.reduce((sum, m) => sum + m.total_spent, 0) / monthly_trends.length
+        : 0;
+    const average_monthly_income =
+      monthly_trends.length > 0
+        ? monthly_trends.reduce((sum, m) => sum + m.total_income, 0) / monthly_trends.length
+        : 0;
 
     return new Response(
       JSON.stringify({
         category_comparisons,
         monthly_trends,
-        average_monthly_spending: averages?.average_monthly_spending || 0,
-        average_monthly_income: averages?.average_monthly_income || 0,
+        average_monthly_spending,
+        average_monthly_income,
       }),
       {
         status: 200,

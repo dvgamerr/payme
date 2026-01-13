@@ -2,17 +2,31 @@
  * POST /api/months/[id]/close
  * Close a month (lock editing)
  */
-import { db } from '../../../../lib/db.js';
+import { and, eq } from 'drizzle-orm';
+import { db, nowSql, schema } from '../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+
+const { months } = schema;
 
 export async function POST({ params, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const id = parseInt(params.id);
 
     // Verify month belongs to user
-    const monthStmt = db.prepare('SELECT * FROM months WHERE id = ? AND user_id = ?');
-    const month = monthStmt.get(id, user.id);
+    const monthRows = await db
+      .select({
+        id: months.id,
+        user_id: months.userId,
+        year: months.year,
+        month: months.month,
+        is_closed: months.isClosed,
+        closed_at: months.closedAt,
+      })
+      .from(months)
+      .where(and(eq(months.id, id), eq(months.userId, user.id)))
+      .limit(1);
+    const month = monthRows[0];
 
     if (!month) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
@@ -21,7 +35,7 @@ export async function POST({ params, cookies }) {
       });
     }
 
-    if (month.is_closed) {
+    if (Boolean(month.is_closed)) {
       return new Response(JSON.stringify({ error: 'Month already closed' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -52,15 +66,22 @@ export async function POST({ params, cookies }) {
     }
 
     // Close the month
-    const updateStmt = db.prepare(`
-      UPDATE months 
-      SET is_closed = 1, closed_at = datetime('now')
-      WHERE id = ?
-    `);
-    updateStmt.run(id);
+    await db.update(months).set({ isClosed: true, closedAt: nowSql }).where(eq(months.id, id));
 
     // Get updated month
-    const updatedMonth = monthStmt.get(id, user.id);
+    const updatedRows = await db
+      .select({
+        id: months.id,
+        user_id: months.userId,
+        year: months.year,
+        month: months.month,
+        is_closed: months.isClosed,
+        closed_at: months.closedAt,
+      })
+      .from(months)
+      .where(and(eq(months.id, id), eq(months.userId, user.id)))
+      .limit(1);
+    const updatedMonth = updatedRows[0];
     updatedMonth.is_closed = Boolean(updatedMonth.is_closed);
 
     return new Response(JSON.stringify(updatedMonth), {

@@ -5,21 +5,25 @@
  * POST /api/categories
  * Create new budget category
  */
-import { db } from '../../../lib/db.js';
+import { asc, eq } from 'drizzle-orm';
+import { db, schema } from '../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../lib/middleware.js';
+
+const { budgetCategories } = schema;
 
 export async function GET({ cookies }) {
   try {
-    const user = requireAuth(cookies);
-
-    const stmt = db.prepare(`
-      SELECT id, user_id, label, default_amount
-      FROM budget_categories
-      WHERE user_id = ?
-      ORDER BY label
-    `);
-
-    const categories = stmt.all(user.id);
+    const user = await requireAuth(cookies);
+    const categories = await db
+      .select({
+        id: budgetCategories.id,
+        user_id: budgetCategories.userId,
+        label: budgetCategories.label,
+        default_amount: budgetCategories.defaultAmount,
+      })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.userId, user.id))
+      .orderBy(asc(budgetCategories.label));
 
     return new Response(JSON.stringify(categories), {
       status: 200,
@@ -39,7 +43,7 @@ export async function GET({ cookies }) {
 
 export async function POST({ request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const body = await request.json();
     const { label, default_amount } = body;
 
@@ -50,15 +54,13 @@ export async function POST({ request, cookies }) {
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO budget_categories (user_id, label, default_amount)
-      VALUES (?, ?, ?)
-    `);
-
-    const result = stmt.run(user.id, label, default_amount);
+    const rows = await db
+      .insert(budgetCategories)
+      .values({ userId: user.id, label, defaultAmount: default_amount })
+      .returning({ id: budgetCategories.id });
 
     const category = {
-      id: result.lastInsertRowid,
+      id: rows[0]?.id,
       user_id: user.id,
       label,
       default_amount,

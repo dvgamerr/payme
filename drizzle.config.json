@@ -1,0 +1,8 @@
+{
+  "schema": "./src/lib/schema/sqlite.js",
+  "out": "./drizzle",
+  "dialect": "sqlite",
+  "dbCredentials": {
+    "url": "file:./payme.db"
+  }
+}

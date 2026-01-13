@@ -24,4 +24,7 @@ pnpm-debug.log*
 # IDE
 .idea/
 frontend.old
+
+# database files (but keep migration files in drizzle/)
 *.db
+!drizzle/**/*.db

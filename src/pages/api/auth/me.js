@@ -6,7 +6,7 @@ import { getUserFromSession } from '../../../lib/auth.js';
 
 export async function GET({ cookies }) {
   const sessionId = cookies.get('session_id')?.value;
-  const user = getUserFromSession(sessionId);
+  const user = await getUserFromSession(sessionId);
 
   if (!user) {
     return new Response(JSON.stringify({ error: 'Not authenticated' }), {

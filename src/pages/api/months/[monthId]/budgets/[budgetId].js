@@ -2,12 +2,15 @@
  * PUT /api/months/[monthId]/budgets/[budgetId]
  * Update budget allocation amount
  */
-import { db } from '../../../../../lib/db.js';
+import { and, eq } from 'drizzle-orm';
+import { db, schema } from '../../../../../lib/db.js';
 import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
+
+const { monthlyBudgets, months } = schema;
 
 export async function PUT({ params, request, cookies }) {
   try {
-    const user = requireAuth(cookies);
+    const user = await requireAuth(cookies);
     const monthId = parseInt(params.monthId);
     const budgetId = parseInt(params.budgetId);
     const body = await request.json();
@@ -21,12 +24,19 @@ export async function PUT({ params, request, cookies }) {
     }
 
     // Verify budget belongs to user's month
-    const checkStmt = db.prepare(`
-      SELECT mb.id FROM monthly_budgets mb
-      JOIN months m ON m.id = mb.month_id
-      WHERE mb.id = ? AND mb.month_id = ? AND m.user_id = ?
-    `);
-    const budget = checkStmt.get(budgetId, monthId, user.id);
+    const checkRows = await db
+      .select({ id: monthlyBudgets.id })
+      .from(monthlyBudgets)
+      .innerJoin(months, eq(months.id, monthlyBudgets.monthId))
+      .where(
+        and(
+          eq(monthlyBudgets.id, budgetId),
+          eq(monthlyBudgets.monthId, monthId),
+          eq(months.userId, user.id)
+        )
+      )
+      .limit(1);
+    const budget = checkRows[0];
 
     if (!budget) {
       return new Response(JSON.stringify({ error: 'Budget not found' }), {
@@ -35,11 +45,22 @@ export async function PUT({ params, request, cookies }) {
       });
     }
 
-    const stmt = db.prepare('UPDATE monthly_budgets SET allocated_amount = ? WHERE id = ?');
-    stmt.run(allocated_amount, budgetId);
+    await db
+      .update(monthlyBudgets)
+      .set({ allocatedAmount: allocated_amount })
+      .where(eq(monthlyBudgets.id, budgetId));
 
-    const resultStmt = db.prepare('SELECT * FROM monthly_budgets WHERE id = ?');
-    const updated = resultStmt.get(budgetId);
+    const resultRows = await db
+      .select({
+        id: monthlyBudgets.id,
+        month_id: monthlyBudgets.monthId,
+        category_id: monthlyBudgets.categoryId,
+        allocated_amount: monthlyBudgets.allocatedAmount,
+      })
+      .from(monthlyBudgets)
+      .where(eq(monthlyBudgets.id, budgetId))
+      .limit(1);
+    const updated = resultRows[0];
 
     return new Response(JSON.stringify(updated), {
       status: 200,

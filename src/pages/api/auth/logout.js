@@ -8,7 +8,7 @@ export async function POST({ cookies }) {
   const sessionId = cookies.get('session_id')?.value;
 
   if (sessionId) {
-    deleteSession(sessionId);
+    await deleteSession(sessionId);
   }
 
   cookies.delete('session_id', { path: '/' });

@@ -4,9 +4,9 @@
  */
 import { getUserFromSession } from './auth.js';
 
-export function requireAuth(cookies) {
+export async function requireAuth(cookies) {
   const sessionId = cookies.get('session_id')?.value;
-  const user = getUserFromSession(sessionId);
+  const user = await getUserFromSession(sessionId);
 
   if (!user) {
     throw new Error('Unauthorized');
