@@ -20,6 +20,19 @@
   let label = '';
   let amount = '';
 
+  // Reset form when modal closes
+  $: if (!isManaging) {
+    isAddingCategory = false;
+    editingCategoryId = null;
+    editingBudgetId = null;
+    label = '';
+    amount = '';
+  }
+
+  function closeModal() {
+    isManaging = false;
+  }
+
   async function handleAddCategory() {
     if (!label || !amount) return;
     await api.categories.create({ label, default_amount: parseFloat(amount) });
@@ -139,7 +152,7 @@
   </div>
 </Card>
 
-<Modal isOpen={isManaging} onClose={() => (isManaging = false)} title="Manage Categories">
+<Modal bind:isOpen={isManaging} onClose={closeModal} title="Manage Categories">
   <p class="text-charcoal-500 dark:text-charcoal-400 mb-4 text-xs">
     Categories define your budget types. Default amounts apply to new months.
   </p>

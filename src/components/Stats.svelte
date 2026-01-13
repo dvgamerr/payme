@@ -24,10 +24,17 @@
   let stats = null;
   let loading = false;
 
+  // Reactive statement to load stats when modal opens
+  $: if (isOpen && !stats) {
+    loadStats();
+  }
+
   async function loadStats() {
     loading = true;
     try {
       stats = await api.stats.get();
+    } catch (err) {
+      console.error('Failed to load stats:', err);
     } finally {
       loading = false;
     }
@@ -35,11 +42,13 @@
 
   function openModal() {
     isOpen = true;
-    loadStats();
   }
 
   function closeModal() {
     isOpen = false;
+    // Reset state when closing
+    stats = null;
+    loading = false;
   }
 
   $: trendData =
@@ -59,7 +68,7 @@
   Stats
 </Button>
 
-<Modal {isOpen} onClose={closeModal} title="Statistics">
+<Modal bind:isOpen onClose={closeModal} title="Statistics">
   {#if loading}
     <div class="text-charcoal-500 py-8 text-center">Loading...</div>
   {:else if stats}
@@ -207,3 +216,7 @@
     </div>
   {/if}
 </Modal>
+
+<style>
+  /* Optional: Add fade-in animation for stats content */
+</style>

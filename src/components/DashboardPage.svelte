@@ -228,8 +228,7 @@
     </footer>
 
     <VarianceModal
-      isOpen={showVarianceModal}
-      onClose={() => (showVarianceModal = false)}
+      bind:isOpen={showVarianceModal}
       budgets={summary.budgets}
       totalIncome={summary.total_income}
       totalFixed={summary.total_fixed}

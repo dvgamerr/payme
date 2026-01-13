@@ -11,6 +11,16 @@
   let pendingImport = null;
   let importing = false;
 
+  // Reset import state when modal closes
+  $: if (!showImportConfirm) {
+    pendingImport = null;
+    importing = false;
+  }
+
+  function closeImportModal() {
+    showImportConfirm = false;
+  }
+
   $: isDark = $theme === 'dark';
   $: user = $auth.user;
 
@@ -128,7 +138,7 @@
     <slot />
   </main>
 
-  <Modal isOpen={showImportConfirm} onClose={() => (showImportConfirm = false)} title="Import Data">
+  <Modal bind:isOpen={showImportConfirm} onClose={closeImportModal} title="Import Data">
     <div class="space-y-4">
       <p class="text-charcoal-600 dark:text-charcoal-300 text-sm">
         This will replace all your current data with the imported file.

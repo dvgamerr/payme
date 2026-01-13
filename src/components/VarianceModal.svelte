@@ -3,11 +3,14 @@
   import Modal from './ui/Modal.svelte';
 
   export let isOpen = false;
-  export let onClose = () => {};
   export let budgets = [];
   export let totalIncome = 0;
   export let totalFixed = 0;
   export let totalBudgeted = 0;
+
+  function handleClose() {
+    isOpen = false;
+  }
 
   $: {
     const overBudgetItems = [];
@@ -55,7 +58,7 @@
   $: isOnTrack = netVariance <= 0 && incomeShortfall === 0;
 </script>
 
-<Modal {isOpen} {onClose} title="Budget Analysis">
+<Modal bind:isOpen onClose={handleClose} title="Budget Analysis">
   <div class="space-y-6">
     {#if isOnTrack}
       <div class="bg-sage-100 dark:bg-sage-900/30 flex items-center gap-3 rounded p-4">
@@ -197,3 +200,7 @@
     </div>
   </div>
 </Modal>
+
+<style>
+  /* Optional: Add styles for modal content */
+</style>

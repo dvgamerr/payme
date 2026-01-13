@@ -15,6 +15,18 @@
   let label = '';
   let amount = '';
 
+  // Reset form when modal closes
+  $: if (!isManaging) {
+    isAdding = false;
+    editingId = null;
+    label = '';
+    amount = '';
+  }
+
+  function closeModal() {
+    isManaging = false;
+  }
+
   $: total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   async function handleAdd() {
@@ -95,7 +107,7 @@
   {/if}
 </Card>
 
-<Modal isOpen={isManaging} onClose={() => (isManaging = false)} title="Manage Fixed Expenses">
+<Modal bind:isOpen={isManaging} onClose={closeModal} title="Manage Fixed Expenses">
   <div class="space-y-3">
     {#each expenses as expense (expense.id)}
       <div>
