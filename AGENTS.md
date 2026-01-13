@@ -134,7 +134,7 @@ Convert all React UI primitives to Svelte:
 
 ### Phase 10: Dashboard Integration ✅ COMPLETE
 
-- [x] `src/pages/dashboard.astro` - Main application page
+- [x] `src/pages/index.astro` - Main application page
 - [x] `DashboardPage.svelte` - Component orchestrator
 - [x] All components integrated
 - [x] Month management logic implemented
