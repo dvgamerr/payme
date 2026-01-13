@@ -1,0 +1,14 @@
+---
+import { getUserFromSession } from '../lib/auth.js';
+
+// Check authentication
+const sessionId = Astro.cookies.get('session_id')?.value;
+const user = getUserFromSession(sessionId);
+
+// Redirect based on authentication status
+if (user) {
+  return Astro.redirect('/dashboard');
+} else {
+  return Astro.redirect('/login');
+}
+---

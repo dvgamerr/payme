@@ -1,0 +1,27 @@
+import { defineConfig } from 'astro/config';
+import svelte from '@astrojs/svelte';
+import tailwindcss from '@tailwindcss/vite';
+import bun from '@nurodev/astro-bun';
+
+export default defineConfig({
+  adapter: bun(),
+  integrations: [svelte()],
+  output: 'server',
+  build: {
+    assets: 'dist',
+  },
+  server: {
+    host: true,
+  },
+  vite: {
+    plugins: [tailwindcss()],
+    server: {
+      watch: {
+        ignored: ['.github/**/*'],
+      },
+    },
+  },
+  security: {
+    checkOrigin: false,
+  },
+});

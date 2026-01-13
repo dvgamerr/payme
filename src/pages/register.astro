@@ -1,0 +1,146 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getUserFromSession } from '../lib/auth.js';
+
+// Check if user is already authenticated
+const sessionId = Astro.cookies.get('session_id')?.value;
+const user = getUserFromSession(sessionId);
+
+// Redirect to dashboard if authenticated
+if (user) {
+  return Astro.redirect('/dashboard');
+}
+---
+
+<Layout title="Register - PayMe">
+  <div
+    class="from-sand-100 to-sage-100 dark:from-charcoal-950 dark:to-charcoal-900 flex min-h-screen items-center justify-center bg-gradient-to-br px-4"
+  >
+    <div class="w-full max-w-md">
+      <div
+        class="dark:bg-charcoal-900 border-sand-300 dark:border-charcoal-800 border bg-white p-8 shadow-lg"
+      >
+        <h1 class="text-charcoal-900 dark:text-sand-50 mb-6 text-center text-2xl font-bold">
+          PayMe
+        </h1>
+        <h2 class="text-charcoal-700 dark:text-sand-300 mb-6 text-center text-lg">
+          Create your account
+        </h2>
+
+        <form id="registerForm" class="space-y-4">
+          <div>
+            <label for="username" class="text-charcoal-700 dark:text-sand-300 mb-1 block text-sm">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              class="border-sand-300 dark:border-charcoal-600 text-charcoal-900 dark:text-sand-100 focus:border-sage-500 dark:focus:border-sage-400 w-full border-b-2 bg-transparent px-1 py-2 text-sm transition-colors focus:outline-none"
+              autocomplete="username"
+            />
+          </div>
+
+          <div>
+            <label for="password" class="text-charcoal-700 dark:text-sand-300 mb-1 block text-sm">
+              Password (min 6 characters)
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              minlength="6"
+              class="border-sand-300 dark:border-charcoal-600 text-charcoal-900 dark:text-sand-100 focus:border-sage-500 dark:focus:border-sage-400 w-full border-b-2 bg-transparent px-1 py-2 text-sm transition-colors focus:outline-none"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div>
+            <label
+              for="confirmPassword"
+              class="text-charcoal-700 dark:text-sand-300 mb-1 block text-sm"
+            >
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              required
+              minlength="6"
+              class="border-sand-300 dark:border-charcoal-600 text-charcoal-900 dark:text-sand-100 focus:border-sage-500 dark:focus:border-sage-400 w-full border-b-2 bg-transparent px-1 py-2 text-sm transition-colors focus:outline-none"
+              autocomplete="new-password"
+            />
+          </div>
+
+          <div id="error" class="text-terracotta-600 dark:text-terracotta-400 hidden text-sm"></div>
+
+          <button
+            type="submit"
+            class="bg-sage-600 text-sand-50 hover:bg-sage-700 active:bg-sage-800 dark:bg-sage-500 dark:hover:bg-sage-600 w-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Create Account
+          </button>
+        </form>
+
+        <div class="mt-6 text-center">
+          <p class="text-charcoal-600 dark:text-sand-400 text-sm">
+            Already have an account?
+            <a href="/login" class="text-sage-600 dark:text-sage-400 hover:underline"> Sign in </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const errorDiv = document.getElementById('error');
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const username = formData.get('username');
+      const password = formData.get('password');
+      const confirmPassword = formData.get('confirmPassword');
+
+      errorDiv.classList.add('hidden');
+
+      // Client-side validation
+      if (password !== confirmPassword) {
+        errorDiv.textContent = 'Passwords do not match';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      if (password.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          window.location.href = '/dashboard';
+        } else {
+          const data = await response.json();
+          errorDiv.textContent = data.error || 'Registration failed';
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Network error. Please try again.';
+        errorDiv.classList.remove('hidden');
+      }
+    });
+  </script>
+</Layout>

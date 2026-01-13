@@ -1,0 +1,79 @@
+/**
+ * Theme Store
+ * Manages dark/light theme state with localStorage persistence
+ */
+import { writable } from 'svelte/store';
+
+const THEME_KEY = 'payme-theme';
+const browser = typeof window !== 'undefined';
+
+function createThemeStore() {
+  // Initialize theme from localStorage or system preference
+  const getInitialTheme = () => {
+    if (!browser) return false;
+
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored !== null) {
+      return stored === 'dark';
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  };
+
+  const { subscribe, set, update } = writable(getInitialTheme());
+
+  return {
+    subscribe,
+
+    /**
+     * Toggle between dark and light theme
+     */
+    toggle: () => {
+      update((isDark) => {
+        const newValue = !isDark;
+        if (browser) {
+          localStorage.setItem(THEME_KEY, newValue ? 'dark' : 'light');
+          if (newValue) {
+            document.body.classList.add('dark');
+          } else {
+            document.body.classList.remove('dark');
+          }
+        }
+        return newValue;
+      });
+    },
+
+    /**
+     * Set theme explicitly
+     * @param {boolean} isDark
+     */
+    set: (isDark) => {
+      if (browser) {
+        localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+        if (isDark) {
+          document.body.classList.add('dark');
+        } else {
+          document.body.classList.remove('dark');
+        }
+      }
+      set(isDark);
+    },
+
+    /**
+     * Initialize theme on mount
+     */
+    init: () => {
+      if (browser) {
+        const isDark = getInitialTheme();
+        if (isDark) {
+          document.body.classList.add('dark');
+        } else {
+          document.body.classList.remove('dark');
+        }
+        set(isDark);
+      }
+    },
+  };
+}
+
+export const theme = createThemeStore();
