@@ -28,6 +28,7 @@ export const fixedExpenses = sqliteTable('fixed_expenses', {
   frequency: text('frequency').notNull().default('monthly'), // 'monthly' or 'yearly'
   currency: text('currency').notNull().default('THB'),
   exchangeRate: real('exchange_rate').notNull().default(1),
+  displayOrder: integer('display_order').notNull().default(0),
 })
 
 export const userSettings = sqliteTable('user_settings', {

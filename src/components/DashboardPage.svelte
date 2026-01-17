@@ -11,7 +11,7 @@
   import VarianceModal from './VarianceModal.svelte'
   import IncomeSection from './IncomeSection.svelte'
   import FixedExpenses from './FixedExpenses.svelte'
-  import BudgetSection from './BudgetSection.svelte'
+  // import BudgetSection from './BudgetSection.svelte'
   import ItemsSection from './ItemsSection.svelte'
   import Stats from './Stats.svelte'
 
@@ -104,7 +104,11 @@
       const fixedExpenses = await api.fixedExpenses.list()
 
       const totalIncome = incomeEntries.reduce((sum, e) => sum + e.amount, 0)
-      const totalFixed = fixedExpenses.reduce((sum, e) => sum + e.amount, 0)
+      const totalFixed = fixedExpenses.reduce((sum, e) => {
+        const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
+        const exchangeRate = e.exchange_rate || 1
+        return sum + monthlyAmount * exchangeRate
+      }, 0)
       const totalSpent = items.reduce((sum, i) => sum + i.amount, 0)
       const totalBudgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
       const remaining = totalIncome - totalFixed - totalSpent
@@ -199,21 +203,25 @@
         remaining={summary.remaining}
       />
 
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <IncomeSection
           monthId={selectedMonthId}
           entries={summary.income_entries}
           isReadOnly={summary.month.is_closed}
           onUpdate={refresh}
         />
-        <FixedExpenses expenses={summary.fixed_expenses} onUpdate={refresh} />
-        <BudgetSection
+        <FixedExpenses
+          expenses={summary.fixed_expenses}
+          totalFixed={summary.total_fixed}
+          onUpdate={refresh}
+        />
+        <!-- <BudgetSection
           monthId={selectedMonthId}
           budgets={summary.budgets}
           {categories}
           isReadOnly={summary.month.is_closed}
           onUpdate={refresh}
-        />
+        /> -->
       </div>
 
       <ItemsSection

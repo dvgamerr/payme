@@ -39,6 +39,10 @@ async function getMonthSummary(monthId, userId) {
       user_id: fixedExpenses.userId,
       label: fixedExpenses.label,
       amount: fixedExpenses.amount,
+      frequency: fixedExpenses.frequency,
+      currency: fixedExpenses.currency,
+      exchange_rate: fixedExpenses.exchangeRate,
+      display_order: fixedExpenses.displayOrder,
     })
     .from(fixedExpenses)
     .where(eq(fixedExpenses.userId, userId))
@@ -86,7 +90,11 @@ async function getMonthSummary(monthId, userId) {
     .orderBy(desc(items.spentOn))
 
   const total_income = income_entries.reduce((sum, e) => sum + e.amount, 0)
-  const total_fixed = fixed_expenses.reduce((sum, e) => sum + e.amount, 0)
+  const total_fixed = fixed_expenses.reduce((sum, e) => {
+    const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
+    const exchangeRate = e.exchange_rate || 1
+    return sum + monthlyAmount * exchangeRate
+  }, 0)
   const total_budgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
   const total_spent = itemsRows.reduce((sum, i) => sum + i.amount, 0)
   const remaining = total_income - total_fixed - total_spent

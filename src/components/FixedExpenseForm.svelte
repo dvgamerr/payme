@@ -1,20 +1,10 @@
 <script>
-  import { Trash2, Slash } from 'lucide-svelte'
+  import { Trash2, Check, X, GripVertical } from 'lucide-svelte'
+  import { settings } from '../stores/settings'
   import Input from './ui/Input.svelte'
   import Toggle from './ui/Toggle.svelte'
   import Select from './ui/Select.svelte'
 
-  /**
-   * Fixed Expense Form Component
-   * @prop {string} mode - 'add' | 'edit'
-   * @prop {string} label - Expense label
-   * @prop {string} amount - Expense amount
-   * @prop {string} frequency - 'monthly' | 'yearly'
-   * @prop {string} currency - Currency code
-   * @prop {Function} onSave - Callback when saving
-   * @prop {Function} onCancel - Callback when canceling
-   * @prop {Function} onDelete - Callback when deleting (edit mode only)
-   */
   export let mode = 'add'
   export let label = ''
   export let amount = ''
@@ -23,10 +13,12 @@
   export let onSave = () => {}
   export let onCancel = () => {}
   export let onDelete = null
+  export let dragHandleProps = null
 
+  let labelInput = null
   let amountInput = null
 
-  const currencyOptions = [
+  const allCurrencies = [
     { value: 'USD', label: 'USD' },
     { value: 'EUR', label: 'EUR' },
     { value: 'GBP', label: 'GBP' },
@@ -77,34 +69,44 @@
     { value: 'LKR', label: 'LKR' },
   ]
 
+  $: currencyOptions = (() => {
+    const baseCurrency = $settings.baseCurrency || 'THB'
+    const baseOption = allCurrencies.find((c) => c.value === baseCurrency)
+    const others = allCurrencies.filter((c) => c.value !== baseCurrency)
+    return baseOption ? [baseOption, ...others] : allCurrencies
+  })()
+
   $: if (mode === 'edit' && amountInput) {
     amountInput.focus()
   }
 
-  function handleKeyDown(event) {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      onSave()
-    } else if (event.key === 'Escape') {
-      event.preventDefault()
-      onCancel()
-    }
+  $: if (mode === 'add' && labelInput) {
+    labelInput.focus()
   }
 
-  function handleBlur() {
-    if (label || amount) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
       onSave()
     }
   }
 </script>
 
 <div class="flex flex-1 items-end gap-2">
+  {#if mode === 'edit' && dragHandleProps}
+    <button
+      {...dragHandleProps}
+      class="text-muted-foreground cursor-grab opacity-50 hover:opacity-100 active:cursor-grabbing"
+    >
+      <GripVertical size={20} />
+    </button>
+  {/if}
   <div class="flex-1">
     <Input
       placeholder="Expense"
       bind:value={label}
+      bind:this={labelInput}
       on:keydown={handleKeyDown}
-      on:blur={handleBlur}
     />
   </div>
   <div class="w-17">
@@ -115,29 +117,48 @@
       bind:this={amountInput}
       formatAsNumber={true}
       on:keydown={handleKeyDown}
-      on:blur={handleBlur}
     />
   </div>
-  <div class="w-20">
+  <div class="w-18">
     <Select bind:value={currency} options={currencyOptions} />
   </div>
   <div class="flex items-end">
-    /
+    <span
+      class="placeholder:text-muted-foreground mx-1 bg-transparent py-2 text-left text-sm capitalize transition-colors focus:outline-none"
+      >/</span
+    >
     <Toggle
       bind:value={frequency}
       width="w-17"
       options={[
-        { value: 'monthly', label: 'ต่อเดือน' },
-        { value: 'yearly', label: 'ต่อปี' },
+        { value: 'monthly', label: 'monthly' },
+        { value: 'yearly', label: 'yearly' },
       ]}
     />
   </div>
-  {#if mode === 'edit' && onDelete}
+  <div class="flex items-center gap-1">
     <button
-      on:click={onDelete}
-      class="text-destructive cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+      on:click={onSave}
+      class="text-success cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+      title="บันทึก"
     >
-      <Trash2 size={16} />
+      <Check size={16} />
     </button>
-  {/if}
+    <button
+      on:click={onCancel}
+      class="text-muted-foreground cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+      title="ยกเลิก"
+    >
+      <X size={16} />
+    </button>
+    {#if mode === 'edit' && onDelete}
+      <button
+        on:click={onDelete}
+        class="text-destructive cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+        title="ลบ"
+      >
+        <Trash2 size={16} />
+      </button>
+    {/if}
+  </div>
 </div>

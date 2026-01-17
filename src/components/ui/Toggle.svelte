@@ -23,7 +23,7 @@
 <button
   type="button"
   on:click={toggle}
-  class="hover:bg-muted hover:border-accent text-muted-foreground hover:text-foreground {width} flex cursor-pointer items-center justify-between gap-1 rounded-xs px-2 py-1 text-sm transition-colors"
+  class="hover:bg-muted hover:border-accent {width} border-border placeholder:text-muted-foreground hover:border-foreground hover:border-accent border-b bg-transparent px-2 py-2 text-left text-sm capitalize transition-colors focus:outline-none"
 >
   <span>{selectedLabel}</span>
 </button>

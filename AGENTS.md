@@ -111,3 +111,13 @@ Prettier Configuration (ตัวอย่าง)
   "singleQuote": true
 }
 ```
+
+---
+
+### การทำ Migration
+
+1. **แก้ schema ก่อนเสมอ** - อย่าเขียน SQL migration เอง
+2. **Generate ด้วย drizzle-kit** - ให้เครื่องมือสร้าง SQL ให้
+3. **Review SQL ที่ได้** - ตรวจสอบไฟล์ที่ generate ออกมา
+4. **Execute แบบ controlled** - ใช้ script พิเศษเพื่อความปลอดภัย
+5. **Version control** - commit ทั้ง schema และ migration files

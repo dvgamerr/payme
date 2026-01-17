@@ -1,12 +1,15 @@
 <script>
-  import { Plus } from 'lucide-svelte'
+  import { Plus, GripVertical } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import numeral from 'numeral'
+  import { dndzone } from 'svelte-dnd-action'
+  import { flip } from 'svelte/animate'
   import Card from './ui/Card.svelte'
   import FixedExpenseForm from './FixedExpenseForm.svelte'
 
   export let expenses = []
+  export let totalFixed = 0
   export let onUpdate = () => {}
 
   let isAdding = false
@@ -17,16 +20,12 @@
   let currency = 'THB'
   let currencySymbol = '฿'
 
-  // Subscribe to settings for currency symbol
+  const flipDurationMs = 0
+
   $: currencySymbol = $settings.currencySymbol || '฿'
   $: baseCurrency = $settings.baseCurrency || 'THB'
 
-  // Calculate total (always in monthly equivalent and base currency)
-  $: total = expenses.reduce((sum, e) => {
-    const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
-    const exchangeRate = e.exchange_rate || 1
-    return sum + monthlyAmount * exchangeRate
-  }, 0)
+  $: items = expenses.map((exp) => ({ id: exp.id, data: exp }))
 
   function getMonthlyAmount(expense) {
     const monthlyAmount = expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
@@ -64,7 +63,7 @@
     frequency = 'monthly'
     currency = 'THB'
     isAdding = false
-    await onUpdate()
+    onUpdate()
   }
 
   async function handleUpdate(id) {
@@ -82,12 +81,12 @@
     amount = ''
     frequency = 'monthly'
     currency = 'THB'
-    await onUpdate()
+    onUpdate()
   }
 
   async function handleDelete(id) {
     await api.fixedExpenses.delete(id)
-    await onUpdate()
+    onUpdate()
   }
 
   function startEdit(expense) {
@@ -112,6 +111,23 @@
     cancelEdit()
     isAdding = true
   }
+
+  function handleDndConsider(e) {
+    items = e.detail.items
+  }
+
+  async function handleDndFinalize(e) {
+    items = e.detail.items
+    const newOrder = items.map((item) => item.data.id)
+    try {
+      await api.fixedExpenses.reorder(newOrder)
+      // ไม่ต้อง refetch ทุกอย่าง เพราะ UI update แล้ว
+      // expenses จะถูก update จาก parent component ผ่าน prop
+    } catch (error) {
+      console.error('Failed to reorder expenses:', error)
+      onUpdate()
+    }
+  }
 </script>
 
 <Card>
@@ -126,42 +142,62 @@
   </div>
 
   <div class="min-h-[200px] space-y-0">
-    {#each expenses as expense (expense.id)}
-      <div class="flex items-center justify-between">
-        {#if editingId === expense.id}
-          <!-- Editing Mode -->
-          <FixedExpenseForm
-            mode="edit"
-            bind:label
-            bind:amount
-            bind:frequency
-            bind:currency
-            onSave={() => handleUpdate(expense.id)}
-            onCancel={cancelEdit}
-            onDelete={() => handleDelete(expense.id)}
-          />
-        {:else}
-          <!-- View Mode -->
-          <button
-            on:click={() => startEdit(expense)}
-            class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors"
-          >
-            <span>
-              {expense.label}
-              {#if expense.currency && expense.currency !== baseCurrency}
-                <span class="text-muted-foreground ml-2 text-xs">({expense.currency})</span>
+    <div
+      use:dndzone={{
+        items,
+        flipDurationMs,
+        type: 'fixedExpenses',
+        dragDisabled: editingId !== null || isAdding,
+        dropTargetStyle: {},
+      }}
+      on:consider={handleDndConsider}
+      on:finalize={handleDndFinalize}
+    >
+      {#each items as item (item.id)}
+        {@const expense = item.data}
+        <div
+          animate:flip={{ duration: flipDurationMs }}
+          class="flex items-center justify-between outline-none focus:outline-none"
+        >
+          {#if editingId === expense.id}
+            <FixedExpenseForm
+              mode="edit"
+              bind:label
+              bind:amount
+              bind:frequency
+              bind:currency
+              onSave={() => handleUpdate(expense.id)}
+              onCancel={cancelEdit}
+              onDelete={() => handleDelete(expense.id)}
+            />
+          {:else}
+            <button
+              on:click={() => startEdit(expense)}
+              class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-[0.5em] px-3 py-2 text-left text-sm transition-colors"
+            >
+              {#if !editingId && !isAdding}
+                <div
+                  class="text-muted-foreground mr-1 -ml-1 cursor-grab opacity-40 active:cursor-grabbing"
+                >
+                  <GripVertical size={16} />
+                </div>
               {/if}
-            </span>
-            <span class="text-muted-foreground">
-              {currencySymbol}{numeral(getMonthlyAmount(expense)).format('0,0.00')}
-            </span>
-          </button>
-        {/if}
-      </div>
-    {/each}
+              <span class=" flex-1">
+                {expense.label}
+                {#if expense.currency && expense.currency !== baseCurrency}
+                  <span class="text-muted-foreground ml-2 text-xs">({expense.currency})</span>
+                {/if}
+              </span>
+              <span class="text-muted-foreground">
+                {currencySymbol}{numeral(getMonthlyAmount(expense)).format('0,0.00')}
+              </span>
+            </button>
+          {/if}
+        </div>
+      {/each}
+    </div>
 
     {#if isAdding}
-      <!-- Add New Expense -->
       <FixedExpenseForm
         mode="add"
         bind:label
@@ -182,7 +218,7 @@
     <div class="border-border mt-4 flex justify-between border-t pt-3">
       <span class="text-muted-foreground text-xs tracking-wide uppercase"> Total </span>
       <span class="text-foreground text-sm font-semibold">
-        {currencySymbol}{numeral(total).format('0,0.00')}
+        {currencySymbol}{numeral(totalFixed).format('0,0.00')}
       </span>
     </div>
   {/if}

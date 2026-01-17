@@ -27,6 +27,7 @@
     "numeral": "^2.0.6",
     "postgres": "^3.4.8",
     "svelte": "^5.46.4",
+    "svelte-dnd-action": "^0.9.69",
     "tailwindcss": "^4.1.18",
     "zod": "^4.3.5"
   },

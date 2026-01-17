@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
 import { requireAuth, authResponse } from '../../../lib/middleware.js'
 
@@ -16,9 +16,11 @@ export async function GET({ cookies }) {
         frequency: fixedExpenses.frequency,
         currency: fixedExpenses.currency,
         exchange_rate: fixedExpenses.exchangeRate,
+        display_order: fixedExpenses.displayOrder,
       })
       .from(fixedExpenses)
       .where(eq(fixedExpenses.userId, user.id))
+      .orderBy(asc(fixedExpenses.displayOrder))
 
     return new Response(JSON.stringify(expenses), {
       status: 200,
@@ -49,9 +51,26 @@ export async function POST({ request, cookies }) {
       })
     }
 
+    const maxOrder = await db
+      .select({ maxOrder: fixedExpenses.displayOrder })
+      .from(fixedExpenses)
+      .where(eq(fixedExpenses.userId, user.id))
+      .orderBy(desc(fixedExpenses.displayOrder))
+      .limit(1)
+
+    const displayOrder = maxOrder[0]?.maxOrder ? maxOrder[0].maxOrder + 1 : 0
+
     const rows = await db
       .insert(fixedExpenses)
-      .values({ userId: user.id, label, amount, frequency, currency, exchangeRate: exchange_rate })
+      .values({
+        userId: user.id,
+        label,
+        amount,
+        frequency,
+        currency,
+        exchangeRate: exchange_rate,
+        displayOrder,
+      })
       .returning({ id: fixedExpenses.id })
 
     const expense = {
@@ -62,6 +81,7 @@ export async function POST({ request, cookies }) {
       frequency,
       currency,
       exchange_rate,
+      display_order: displayOrder,
     }
 
     return new Response(JSON.stringify(expense), {

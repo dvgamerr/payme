@@ -110,11 +110,19 @@ export async function GET({ cookies }) {
       }
     }
 
-    const fixedRows = await db
-      .select({ amount: sql`COALESCE(SUM(${fixedExpenses.amount}), 0)` })
+    const fixedExpensesRows = await db
+      .select({
+        amount: fixedExpenses.amount,
+        frequency: fixedExpenses.frequency,
+        exchange_rate: fixedExpenses.exchangeRate,
+      })
       .from(fixedExpenses)
       .where(eq(fixedExpenses.userId, user.id))
-    const totalFixed = Number(fixedRows[0]?.amount || 0)
+    const totalFixed = fixedExpensesRows.reduce((sum, e) => {
+      const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
+      const exchangeRate = e.exchange_rate || 1
+      return sum + monthlyAmount * exchangeRate
+    }, 0)
 
     const monthly_trends = monthRows.map((row) => {
       const total_income = incomeByMonth.get(row.id) ?? 0

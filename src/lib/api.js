@@ -63,6 +63,11 @@ export const api = {
         body: JSON.stringify(data),
       }),
     delete: (id) => request(`/fixed-expenses/${id}`, { method: 'DELETE' }),
+    reorder: (order) =>
+      request('/fixed-expenses/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
   },
 
   categories: {
