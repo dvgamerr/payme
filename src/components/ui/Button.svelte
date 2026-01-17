@@ -12,22 +12,19 @@
   export let disabled = false;
 
   const baseStyles =
-    'inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg';
 
   const variants = {
-    primary:
-      'bg-sage-600 text-sand-50 hover:bg-sage-700 active:bg-sage-800 dark:bg-sage-500 dark:hover:bg-sage-600',
-    secondary:
-      'bg-sand-200 text-charcoal-800 hover:bg-sand-300 dark:bg-charcoal-800 dark:text-sand-200 dark:hover:bg-charcoal-700',
-    danger: 'bg-terracotta-600 text-sand-50 hover:bg-terracotta-700 active:bg-terracotta-800',
-    ghost:
-      'bg-transparent hover:bg-sand-200 dark:hover:bg-charcoal-800 text-charcoal-700 dark:text-sand-300',
+    primary: 'bg-primary text-primary-foreground hover:opacity-90',
+    secondary: 'bg-secondary text-secondary-foreground hover:opacity-90',
+    danger: 'bg-destructive text-destructive-foreground hover:opacity-90',
+    ghost: 'bg-transparent hover:bg-accent hover:text-accent-foreground',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base',
+    sm: 'h-8 px-3 text-sm',
+    md: 'h-10 px-4 text-sm',
+    lg: 'h-11 px-6 text-base',
   };
 </script>
 

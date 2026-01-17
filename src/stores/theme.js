@@ -34,9 +34,9 @@ function createThemeStore() {
         if (browser) {
           localStorage.setItem(THEME_KEY, newValue ? 'dark' : 'light');
           if (newValue) {
-            document.body.classList.add('dark');
+            document.documentElement.classList.add('dark');
           } else {
-            document.body.classList.remove('dark');
+            document.documentElement.classList.remove('dark');
           }
         }
         return newValue;
@@ -51,9 +51,9 @@ function createThemeStore() {
       if (browser) {
         localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
         if (isDark) {
-          document.body.classList.add('dark');
+          document.documentElement.classList.add('dark');
         } else {
-          document.body.classList.remove('dark');
+          document.documentElement.classList.remove('dark');
         }
       }
       set(isDark);
@@ -66,9 +66,9 @@ function createThemeStore() {
       if (browser) {
         const isDark = getInitialTheme();
         if (isDark) {
-          document.body.classList.add('dark');
+          document.documentElement.classList.add('dark');
         } else {
-          document.body.classList.remove('dark');
+          document.documentElement.classList.remove('dark');
         }
         set(isDark);
       }

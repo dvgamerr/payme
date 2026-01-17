@@ -1,5 +1,15 @@
 <script>
-  import { Moon, Sun, LogOut, Download, Upload } from 'lucide-svelte';
+  import {
+    Moon,
+    Sun,
+    LogOut,
+    Download,
+    Upload,
+    Wallet,
+    ChartColumn,
+    Settings,
+  } from 'lucide-svelte';
+  import { onMount } from 'svelte';
   import { theme } from '../stores/theme.js';
   import { auth } from '../stores/auth.js';
   import { api } from '../lib/api.js';
@@ -11,6 +21,11 @@
   let pendingImport = null;
   let importing = false;
 
+  // Initialize theme on mount
+  onMount(() => {
+    theme.init();
+  });
+
   // Reset import state when modal closes
   $: if (!showImportConfirm) {
     pendingImport = null;
@@ -21,7 +36,7 @@
     showImportConfirm = false;
   }
 
-  $: isDark = $theme === 'dark';
+  $: isDark = $theme;
   $: user = $auth.user;
 
   function handleExport() {
@@ -77,19 +92,13 @@
 </script>
 
 <div class="min-h-screen">
-  <header
-    class="bg-sand-50/80 dark:bg-charcoal-950/80 border-sand-200 dark:border-charcoal-800 sticky top-0 z-40 border-b backdrop-blur-md"
-  >
-    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-      <span class="text-charcoal-800 dark:text-sand-100 text-xl font-semibold tracking-tight">
-        payme
-      </span>
-      {#if user}
-        <span class="text-charcoal-600 dark:text-charcoal-300 text-sm">
-          Welcome, {user.username}
-        </span>
-      {/if}
-      <div class="flex items-center gap-2">
+  <header class="border-border bg-background/95 sticky top-0 z-40 border-b backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <div>
+        <h1 class="text-2xl font-bold">Payme</h1>
+        <p class="text-muted-foreground text-sm">Track your money, simply.</p>
+      </div>
+      <div class="flex items-center gap-1">
         {#if user}
           <input
             bind:this={fileInput}
@@ -100,35 +109,50 @@
           />
           <button
             on:click={handleImportClick}
-            class="hover:bg-sand-200 dark:hover:bg-charcoal-800 cursor-pointer p-2 transition-colors"
+            class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
             title="Import data"
           >
-            <Upload size={18} />
+            <Upload size={16} />
           </button>
           <button
             on:click={handleExport}
-            class="hover:bg-sand-200 dark:hover:bg-charcoal-800 cursor-pointer p-2 transition-colors"
+            class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
             title="Export data"
           >
-            <Download size={18} />
+            <Download size={16} />
+          </button>
+          <button
+            class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+            title="Statistics"
+          >
+            <ChartColumn size={16} />
+          </button>
+          <button
+            class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+            title="Settings"
+          >
+            <Settings size={16} />
           </button>
         {/if}
         <button
           on:click={() => theme.toggle()}
-          class="hover:bg-sand-200 dark:hover:bg-charcoal-800 cursor-pointer p-2 transition-colors"
+          class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+          title="Toggle theme"
         >
           {#if isDark}
-            <Sun size={18} />
+            <Sun size={16} />
           {:else}
-            <Moon size={18} />
+            <Moon size={16} />
           {/if}
+          <span class="sr-only">Toggle theme</span>
         </button>
         {#if user}
           <button
             on:click={() => auth.logout()}
-            class="hover:bg-sand-200 dark:hover:bg-charcoal-800 cursor-pointer p-2 transition-colors"
+            class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+            title="Logout"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
           </button>
         {/if}
       </div>
@@ -140,13 +164,11 @@
 
   <Modal bind:isOpen={showImportConfirm} onClose={closeImportModal} title="Import Data">
     <div class="space-y-4">
-      <p class="text-charcoal-600 dark:text-charcoal-300 text-sm">
+      <p class="text-muted-foreground text-sm">
         This will replace all your current data with the imported file.
       </p>
       {#if pendingImport}
-        <div
-          class="text-charcoal-500 dark:text-charcoal-400 bg-sand-100 dark:bg-charcoal-800 p-3 text-xs"
-        >
+        <div class="bg-accent/30 rounded-lg p-3 text-sm">
           <div>{pendingImport.categories.length} categories</div>
           <div>{pendingImport.fixed_expenses.length} fixed expenses</div>
           <div>{pendingImport.months.length} months</div>

@@ -70,7 +70,7 @@
 
 <Card className="col-span-full">
   <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-charcoal-700 dark:text-sand-200 text-sm font-semibold">Spending Items</h3>
+    <h3 class="text-foreground text-sm font-semibold">Transactions</h3>
     {#if !isReadOnly && !isAdding}
       <button
         on:click={() => {
@@ -79,7 +79,7 @@
             categoryId = categories[0].id.toString();
           }
         }}
-        class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1 transition-colors"
+        class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
       >
         <Plus size={16} />
       </button>
@@ -87,22 +87,17 @@
   </div>
 
   {#if isAdding && categories.length === 0}
-    <div class="bg-sand-100 dark:bg-charcoal-800 mb-4 p-4 text-center">
-      <p class="text-charcoal-600 dark:text-charcoal-300 mb-1 text-sm">No budget categories yet.</p>
-      <p class="text-charcoal-400 dark:text-charcoal-500 text-xs">
-        Add some in the Budget section first.
-      </p>
-      <button
-        on:click={resetForm}
-        class="text-charcoal-500 hover:text-charcoal-700 dark:hover:text-charcoal-300 mt-3 text-xs"
-      >
+    <div class="border-border mb-4 border-t pt-4 text-center">
+      <p class="text-muted-foreground mb-1 text-sm">No budget categories yet.</p>
+      <p class="text-muted-foreground text-xs">Add some in the Budget section first.</p>
+      <button on:click={resetForm} class="text-foreground mt-3 text-xs hover:opacity-70">
         Close
       </button>
     </div>
   {/if}
 
   {#if isAdding && categories.length > 0}
-    <div class="bg-sand-100 dark:bg-charcoal-800 mb-4 p-4">
+    <div class="border-border mb-4 border-t pt-4">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Input placeholder="Description" bind:value={description} />
         <Input type="number" placeholder="Amount" bind:value={amount} />
@@ -125,15 +120,11 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="border-sand-300 dark:border-charcoal-700 border-b">
-          <th class="text-charcoal-600 dark:text-sand-400 py-2 text-left font-medium"> Date </th>
-          <th class="text-charcoal-600 dark:text-sand-400 py-2 text-left font-medium">
-            Description
-          </th>
-          <th class="text-charcoal-600 dark:text-sand-400 py-2 text-left font-medium">
-            Category
-          </th>
-          <th class="text-charcoal-600 dark:text-sand-400 py-2 text-right font-medium"> Amount </th>
+        <tr class="border-border border-b">
+          <th class="text-muted-foreground py-3 text-left text-xs font-medium">Date</th>
+          <th class="text-muted-foreground py-3 text-left text-xs font-medium"> Description </th>
+          <th class="text-muted-foreground py-3 text-left text-xs font-medium">Category</th>
+          <th class="text-muted-foreground py-3 text-right text-xs font-medium">Amount</th>
           {#if !isReadOnly}
             <th class="w-20"></th>
           {/if}
@@ -141,9 +132,7 @@
       </thead>
       <tbody>
         {#each items as item (item.id)}
-          <tr
-            class="border-sand-200 dark:border-charcoal-800 hover:bg-sand-100 dark:hover:bg-charcoal-900/50 border-b"
-          >
+          <tr class="border-border hover:bg-accent/50 border-b transition-colors last:border-0">
             {#if editingId === item.id}
               <td class="py-2">
                 <Input type="date" bind:value={spentOn} className="text-xs" />
@@ -179,17 +168,24 @@
                 </div>
               </td>
             {:else}
-              <td class="text-charcoal-600 dark:text-charcoal-400 py-2">
-                {new Date(item.spent_on).toLocaleDateString()}
+              <td class="text-muted-foreground py-3 text-sm">
+                {new Date(item.spent_on).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
               </td>
-              <td class="text-charcoal-700 dark:text-sand-300 py-2">
+              <td class="text-foreground py-3 text-sm">
                 {item.description}
               </td>
-              <td class="text-charcoal-600 dark:text-charcoal-400 py-2">
-                {item.category_label}
+              <td class="py-3">
+                <span
+                  class="bg-accent text-accent-foreground inline-block rounded-full px-2 py-0.5 text-xs"
+                >
+                  {item.category_label}
+                </span>
               </td>
-              <td class="text-charcoal-800 dark:text-sand-200 py-2 text-right">
-                ${item.amount.toFixed(2)}
+              <td class="text-foreground py-3 text-right text-sm font-medium">
+                ฿{item.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
               </td>
               {#if !isReadOnly}
                 <td class="py-2">

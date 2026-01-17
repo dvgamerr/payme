@@ -13,23 +13,23 @@
   $: isOver = value > max;
   $: overage = value - max;
 
+  export let color = 'chart-1';
+
   function getColor() {
-    if (percentage >= 100) return 'bg-terracotta-500';
-    if (percentage >= 80) return 'bg-terracotta-400';
-    if (percentage >= 50) return 'bg-sand-500';
-    return 'bg-sage-500';
+    if (percentage >= 100) return 'bg-chart-3';
+    return `bg-${color}`;
   }
 </script>
 
 <div class="space-y-1">
-  <div class="bg-sand-200 dark:bg-charcoal-800 h-2 overflow-hidden">
+  <div class="bg-muted h-1.5 overflow-hidden rounded-full">
     <div
-      class="h-full transition-all duration-300 {getColor()}"
+      class="h-full transition-all duration-300 {getColor()} rounded-full"
       style="width: {Math.min(percentage, 100)}%"
     ></div>
   </div>
   {#if isOver && showOverage}
-    <div class="text-terracotta-600 dark:text-terracotta-400 text-xs">
+    <div class="text-destructive text-xs">
       +${overage.toFixed(2)} over
     </div>
   {/if}

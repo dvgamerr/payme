@@ -51,50 +51,31 @@
 </script>
 
 {#if selectedMonth}
-  <div class="mb-8 flex items-center justify-between">
-    <div class="flex items-center gap-4">
+  <div class="mb-6 flex items-center justify-between">
+    <div class="flex items-center gap-2">
       <button
         on:click={goPrev}
         disabled={currentIndex >= months.length - 1}
-        class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-2 transition-colors disabled:opacity-30"
+        class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:opacity-30"
       >
-        <ChevronLeft size={20} />
+        <ChevronLeft size={18} />
       </button>
-      <div class="text-center">
-        <div class="text-charcoal-900 dark:text-sand-50 text-2xl font-semibold">
-          {MONTH_NAMES[selectedMonth.month - 1]}
-          {selectedMonth.year}
-        </div>
-        <div
-          class="text-charcoal-500 dark:text-charcoal-400 flex items-center justify-center gap-1 text-xs"
-        >
-          {#if selectedMonth.is_closed}
-            <Lock size={12} />
-            closed
-          {:else}
-            active
-          {/if}
-        </div>
+      <div class="text-lg font-medium">
+        {MONTH_NAMES[selectedMonth.month - 1]}
+        {selectedMonth.year}
       </div>
       <button
         on:click={goNext}
         disabled={currentIndex <= 0}
-        class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-2 transition-colors disabled:opacity-30"
+        class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:opacity-30"
       >
-        <ChevronRight size={20} />
+        <ChevronRight size={18} />
       </button>
     </div>
 
-    <div class="flex items-center gap-2">
-      {#if selectedMonth.is_closed}
-        <Button variant="ghost" size="sm" on:click={onDownloadPdf}>
-          <FileDown size={16} class="mr-2" />
-          PDF
-        </Button>
-      {/if}
-      {#if canClose}
-        <Button variant="primary" size="sm" on:click={onClose}>Close Month</Button>
-      {/if}
+    <div class="text-muted-foreground flex items-center gap-2 text-sm">
+      Savings goal
+      <span class="text-accent-gold font-medium">฿10,000</span>
     </div>
   </div>
 {/if}

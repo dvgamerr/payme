@@ -86,10 +86,10 @@
 
 <Card>
   <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-charcoal-700 dark:text-sand-200 text-sm font-semibold">Budget</h3>
+    <h3 class="text-foreground text-sm font-semibold">Budget</h3>
     <button
       on:click={() => (isManaging = true)}
-      class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1 transition-colors"
+      class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
     >
       <Settings size={16} />
     </button>
@@ -121,25 +121,32 @@
           </div>
         {:else}
           <div>
-            <div class="mb-1 flex items-center justify-between">
-              <span class="text-charcoal-700 dark:text-sand-300 text-sm">
+            <div class="mb-2 flex items-center justify-between">
+              <span class="text-foreground text-sm">
                 {budget.category_label}
               </span>
               <div class="flex items-center gap-2">
-                <span class="text-charcoal-500 dark:text-charcoal-400 text-xs">
-                  ${budget.spent_amount.toFixed(2)} / ${budget.allocated_amount.toFixed(2)}
+                <span class="text-muted-foreground text-xs">
+                  {budget.spent_amount.toLocaleString('en-US', { minimumFractionDigits: 0 })} / {budget.allocated_amount.toLocaleString(
+                    'en-US',
+                    { minimumFractionDigits: 0 }
+                  )}
                 </span>
                 {#if !isReadOnly}
                   <button
                     on:click={() => startEditBudget(budget)}
-                    class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
+                    class="hover:bg-accent rounded p-1"
                   >
                     <Pen size={12} />
                   </button>
                 {/if}
               </div>
             </div>
-            <ProgressBar value={budget.spent_amount} max={budget.allocated_amount} />
+            <ProgressBar
+              value={budget.spent_amount}
+              max={budget.allocated_amount}
+              color={`chart-${(budget.id % 5) + 1}`}
+            />
           </div>
         {/if}
       </div>
@@ -153,7 +160,7 @@
 </Card>
 
 <Modal bind:isOpen={isManaging} onClose={closeModal} title="Manage Categories">
-  <p class="text-charcoal-500 dark:text-charcoal-400 mb-4 text-xs">
+  <p class="text-muted-foreground mb-4 text-sm">
     Categories define your budget types. Default amounts apply to new months.
   </p>
   <div class="space-y-3">
@@ -169,35 +176,30 @@
             </div>
             <button
               on:click={() => handleUpdateCategory(cat.id)}
-              class="text-sage-600 hover:bg-sage-100 dark:hover:bg-charcoal-800 p-2"
+              class="p-1.5 opacity-70 hover:opacity-100"
             >
               <Check size={16} />
             </button>
-            <button
-              on:click={cancelEdit}
-              class="text-charcoal-500 hover:bg-sand-200 dark:hover:bg-charcoal-800 p-2"
-            >
+            <button on:click={cancelEdit} class="p-1.5 opacity-70 hover:opacity-100">
               <X size={16} />
             </button>
           </div>
         {:else}
-          <div
-            class="border-sand-200 dark:border-charcoal-800 flex items-center justify-between border-b py-2"
-          >
-            <span class="text-sm">{cat.label}</span>
+          <div class="border-border flex items-center justify-between border-b py-2.5">
+            <span class="text-foreground text-sm">{cat.label}</span>
             <div class="flex items-center gap-2">
-              <span class="text-charcoal-500 text-xs">
-                ${cat.default_amount.toFixed(2)} default
+              <span class="text-muted-foreground text-xs">
+                ฿{cat.default_amount.toLocaleString('en-US', { minimumFractionDigits: 0 })} default
               </span>
               <button
                 on:click={() => startEditCategory(cat)}
-                class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
+                class="p-1 opacity-70 hover:opacity-100"
               >
                 <Pen size={14} />
               </button>
               <button
                 on:click={() => handleDeleteCategory(cat.id)}
-                class="text-terracotta-500 hover:bg-terracotta-100 dark:hover:bg-charcoal-800 p-1"
+                class="text-destructive p-1 opacity-70 hover:opacity-100"
               >
                 <Trash2 size={14} />
               </button>

@@ -68,40 +68,36 @@
 
 <Card>
   <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-charcoal-700 dark:text-sand-200 text-sm font-semibold">Fixed Expenses</h3>
+    <h3 class="text-foreground text-sm font-semibold">Fixed</h3>
     <button
       on:click={() => (isManaging = true)}
-      class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1 transition-colors"
+      class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
     >
       <Settings size={16} />
     </button>
   </div>
 
-  <div class="space-y-2">
+  <div class="space-y-0">
     {#each expenses as expense (expense.id)}
-      <div
-        class="border-sand-200 dark:border-charcoal-800 flex items-center justify-between border-b py-2"
-      >
-        <span class="text-charcoal-700 dark:text-sand-300 text-sm">
+      <div class="border-border flex items-center justify-between border-b py-2.5 last:border-0">
+        <span class="text-foreground text-sm">
           {expense.label}
         </span>
-        <span class="text-charcoal-600 dark:text-charcoal-400 text-sm">
-          ${expense.amount.toFixed(2)}
+        <span class="text-muted-foreground text-sm">
+          ฿{expense.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
         </span>
       </div>
     {/each}
     {#if expenses.length === 0}
-      <div class="text-charcoal-400 dark:text-charcoal-600 py-4 text-center text-sm">
-        No fixed expenses
-      </div>
+      <div class="text-muted-foreground py-6 text-center text-sm">No fixed expenses</div>
     {/if}
   </div>
 
   {#if expenses.length > 0}
-    <div class="border-sand-300 dark:border-charcoal-700 mt-4 flex justify-between border-t pt-3">
-      <span class="text-charcoal-600 dark:text-sand-300 text-sm font-medium"> Total </span>
-      <span class="text-charcoal-800 dark:text-sand-100 text-sm font-semibold">
-        ${total.toFixed(2)}
+    <div class="border-border mt-4 flex justify-between border-t pt-3">
+      <span class="text-foreground text-sm font-medium"> Total </span>
+      <span class="text-foreground text-sm font-semibold">
+        ฿{total.toLocaleString('en-US', { minimumFractionDigits: 0 })}
       </span>
     </div>
   {/if}
@@ -121,14 +117,11 @@
             </div>
             <button
               on:click={() => handleUpdate(expense.id)}
-              class="text-sage-600 hover:bg-sage-100 dark:hover:bg-charcoal-800 p-2"
+              class="p-1.5 opacity-70 hover:opacity-100"
             >
               <Check size={16} />
             </button>
-            <button
-              on:click={cancelEdit}
-              class="text-charcoal-500 hover:bg-sand-200 dark:hover:bg-charcoal-800 p-2"
-            >
+            <button on:click={cancelEdit} class="p-1.5 opacity-70 hover:opacity-100">
               <X size={16} />
             </button>
           </div>
@@ -139,15 +132,12 @@
             <span class="text-sm">{expense.label}</span>
             <div class="flex items-center gap-2">
               <span class="text-sm">${expense.amount.toFixed(2)}</span>
-              <button
-                on:click={() => startEdit(expense)}
-                class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
-              >
+              <button on:click={() => startEdit(expense)} class="p-1 opacity-70 hover:opacity-100">
                 <Pen size={14} />
               </button>
               <button
                 on:click={() => handleDelete(expense.id)}
-                class="text-terracotta-500 hover:bg-terracotta-100 dark:hover:bg-charcoal-800 p-1"
+                class="text-destructive p-1 opacity-70 hover:opacity-100"
               >
                 <Trash2 size={14} />
               </button>

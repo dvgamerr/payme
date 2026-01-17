@@ -56,17 +56,17 @@
       on:click={handleBackdropClick}
     ></div>
     <div
-      class="bg-sand-50 dark:bg-charcoal-900 animate-fadeIn relative mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 shadow-xl"
+      class="bg-card animate-fadeIn relative mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6 shadow-[var(--shadow-md)]"
     >
       <div class="mb-4 flex items-center justify-between">
         {#if title}
-          <h2 class="text-charcoal-800 dark:text-sand-100 text-lg font-semibold">
+          <h2 class="text-foreground text-lg font-semibold">
             {title}
           </h2>
         {/if}
         <button
           on:click={handleClose}
-          class="hover:bg-sand-200 dark:hover:bg-charcoal-800 ml-auto rounded p-1 transition-colors"
+          class="hover:bg-accent ml-auto rounded-lg p-1.5 transition-colors"
           aria-label="Close modal"
         >
           <X size={20} />

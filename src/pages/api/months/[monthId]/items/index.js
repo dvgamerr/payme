@@ -6,8 +6,8 @@
  * Create spending item
  */
 import { desc, eq } from 'drizzle-orm';
-import { db, schema } from '../../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+import { db, schema } from '../../../../../lib/db.js';
+import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
 
 const { budgetCategories, items, months } = schema;
 

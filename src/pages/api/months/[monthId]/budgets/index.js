@@ -3,8 +3,8 @@
  * List monthly budget allocations
  */
 import { and, asc, eq, sql } from 'drizzle-orm';
-import { db, schema } from '../../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+import { db, schema } from '../../../../../lib/db.js';
+import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
 
 const { budgetCategories, items, monthlyBudgets, months } = schema;
 

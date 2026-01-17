@@ -157,28 +157,13 @@
   </Layout>
 {:else}
   <Layout>
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-      <div class="flex flex-wrap items-center gap-4">
-        <MonthNav
-          {months}
-          {selectedMonthId}
-          onSelect={selectMonth}
-          onClose={closeMonth}
-          onDownloadPdf={downloadPdf}
-        />
-        <div class="w-36">
-          <SavingsCard onSavingsChange={handleSavingsChange} />
-        </div>
-        <div class="w-36">
-          <ProjectedSavingsCard
-            {savings}
-            remaining={summary.remaining}
-            onAnalyzeClick={() => (showVarianceModal = true)}
-          />
-        </div>
-      </div>
-      <Stats />
-    </div>
+    <MonthNav
+      {months}
+      {selectedMonthId}
+      onSelect={selectMonth}
+      onClose={closeMonth}
+      onDownloadPdf={downloadPdf}
+    />
 
     <div class="space-y-6">
       <Summary
@@ -186,13 +171,9 @@
         totalFixed={summary.total_fixed}
         totalSpent={summary.total_spent}
         remaining={summary.remaining}
-      >
-        <svelte:fragment slot="extraCard">
-          <RetirementSavingsCard />
-        </svelte:fragment>
-      </Summary>
+      />
 
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <IncomeSection
           monthId={summary.month.id}
           entries={summary.income_entries}
@@ -217,15 +198,6 @@
         onUpdate={refresh}
       />
     </div>
-
-    <footer class="text-charcoal-400 dark:text-charcoal-600 mt-12 py-4 text-center text-xs">
-      {new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })}
-    </footer>
 
     <VarianceModal
       bind:isOpen={showVarianceModal}

@@ -6,8 +6,8 @@
  * Create income entry
  */
 import { asc, eq } from 'drizzle-orm';
-import { db, schema } from '../../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+import { db, schema } from '../../../../../lib/db.js';
+import { requireAuth, authResponse } from '../../../../../lib/middleware.js';
 
 const { incomeEntries, months } = schema;
 

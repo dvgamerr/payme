@@ -11,13 +11,13 @@ export default defineConfig({
     assets: 'dist',
   },
   server: {
-    host: true,
+    host: false,
   },
   vite: {
     plugins: [tailwindcss()],
     server: {
       watch: {
-        ignored: ['.github/**/*'],
+        ignored: ['.github/**/*', '.vscode/**/*', 'drizzle/**/*'],
       },
     },
   },
