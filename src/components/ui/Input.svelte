@@ -1,17 +1,110 @@
 <script>
+  import numeral from 'numeral'
+
   /**
    * Input Component
    * @prop {string} label - Optional label text
    * @prop {string} type - Input HTML type
-   * @prop {string} value - Input value
+   * @prop {string|number} value - Input value
    * @prop {string} placeholder - Placeholder text
+   * @prop {boolean} formatAsNumber - Enable number formatting (0,000)
    */
-  export let label = '';
-  export let type = 'text';
-  export let value = '';
-  export let placeholder = '';
+  export let label = ''
+  export let type = 'text'
+  export let value = ''
+  export let placeholder = ''
+  export let formatAsNumber = false
 
-  let inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
+  let inputId = `input-${Math.random().toString(36).substr(2, 9)}`
+  let displayValue = ''
+
+  /**
+   * Format input value as number while typing
+   * @param {string} value - Raw input value
+   * @returns {string} Formatted value for display
+   */
+  function formatInputNumber(value) {
+    if (!value) return ''
+
+    // Remove all non-digit and non-decimal characters
+    let cleaned = String(value).replace(/[^\d.]/g, '')
+
+    // Handle multiple decimal points
+    const parts = cleaned.split('.')
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('')
+    }
+
+    // Split into integer and decimal parts
+    const [integerPart, decimalPart] = cleaned.split('.')
+
+    // Format integer part with commas
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+    // Combine back
+    if (decimalPart !== undefined) {
+      return `${formattedInteger}.${decimalPart}`
+    }
+
+    return formattedInteger
+  }
+
+  /**
+   * Parse formatted number string to float
+   * @param {string} value - Formatted string
+   * @returns {number} Parsed number
+   */
+  function parseNumber(value) {
+    if (typeof value === 'number') return value
+    if (!value) return 0
+
+    const parsed = numeral(value).value()
+    return parsed ?? 0
+  }
+
+  // Initialize display value
+  $: {
+    if (formatAsNumber && type === 'text') {
+      displayValue = value ? formatInputNumber(String(value)) : ''
+    } else {
+      displayValue = value
+    }
+  }
+
+  function handleInput(event) {
+    if (formatAsNumber && type === 'text') {
+      const input = event.target
+      const cursorPosition = input.selectionStart
+      const oldLength = input.value.length
+
+      // Format the value
+      const formatted = formatInputNumber(input.value)
+      displayValue = formatted
+
+      // Calculate cursor position adjustment
+      const newLength = formatted.length
+      const lengthDiff = newLength - oldLength
+
+      // Update cursor position after DOM update
+      setTimeout(() => {
+        const newCursorPosition = Math.max(0, cursorPosition + lengthDiff)
+        input.setSelectionRange(newCursorPosition, newCursorPosition)
+      }, 0)
+
+      // Update actual value (parsed number)
+      value = parseNumber(formatted)
+    } else {
+      value = event.target.value
+      displayValue = value
+    }
+  }
+
+  function handleBlur(event) {
+    if (formatAsNumber && type === 'text') {
+      // Ensure proper formatting on blur
+      displayValue = value ? formatInputNumber(String(value)) : ''
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-1">
@@ -24,12 +117,12 @@
     id={inputId}
     {type}
     {placeholder}
-    bind:value
-    class="border-border placeholder:text-muted-foreground focus:border-foreground w-full border-b bg-transparent px-0 py-2 text-sm transition-colors focus:outline-none"
-    on:input
+    value={displayValue}
+    on:input={handleInput}
     on:change
-    on:blur
+    on:blur={handleBlur}
     on:focus
+    class="border-border placeholder:text-muted-foreground focus:border-foreground w-full border-b bg-transparent px-0 py-2 text-sm transition-colors focus:outline-none"
     {...$$restProps}
   />
 </div>

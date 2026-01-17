@@ -1,13 +1,5 @@
-import { sql } from 'drizzle-orm';
-import {
-  blob,
-  index,
-  integer,
-  real,
-  sqliteTable,
-  text,
-  uniqueIndex,
-} from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm'
+import { blob, index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable(
   'users',
@@ -24,7 +16,7 @@ export const users = sqliteTable(
   (table) => ({
     usernameUnique: uniqueIndex('users_username_unique').on(table.username),
   })
-);
+)
 
 export const fixedExpenses = sqliteTable('fixed_expenses', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -34,7 +26,7 @@ export const fixedExpenses = sqliteTable('fixed_expenses', {
   label: text('label').notNull(),
   amount: real('amount').notNull(),
   frequency: text('frequency').notNull().default('monthly'), // 'monthly' or 'yearly'
-});
+})
 
 export const userSettings = sqliteTable('user_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -47,7 +39,7 @@ export const userSettings = sqliteTable('user_settings', {
   updatedAt: text('updated_at')
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-});
+})
 
 export const budgetCategories = sqliteTable('budget_categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -56,7 +48,7 @@ export const budgetCategories = sqliteTable('budget_categories', {
     .references(() => users.id, { onDelete: 'cascade' }),
   label: text('label').notNull(),
   defaultAmount: real('default_amount').notNull(),
-});
+})
 
 export const months = sqliteTable(
   'months',
@@ -78,7 +70,7 @@ export const months = sqliteTable(
     ),
     byUserYearMonth: index('idx_months_user_year_month').on(table.userId, table.year, table.month),
   })
-);
+)
 
 export const incomeEntries = sqliteTable(
   'income_entries',
@@ -93,7 +85,7 @@ export const incomeEntries = sqliteTable(
   (table) => ({
     byMonth: index('idx_income_month').on(table.monthId),
   })
-);
+)
 
 export const monthlyBudgets = sqliteTable(
   'monthly_budgets',
@@ -114,7 +106,7 @@ export const monthlyBudgets = sqliteTable(
     ),
     byMonth: index('idx_monthly_budgets_month').on(table.monthId),
   })
-);
+)
 
 export const items = sqliteTable(
   'items',
@@ -133,7 +125,7 @@ export const items = sqliteTable(
   (table) => ({
     byMonth: index('idx_items_month').on(table.monthId),
   })
-);
+)
 
 export const monthlySnapshots = sqliteTable(
   'monthly_snapshots',
@@ -150,7 +142,7 @@ export const monthlySnapshots = sqliteTable(
   (table) => ({
     uniqueMonth: uniqueIndex('monthly_snapshots_month_unique').on(table.monthId),
   })
-);
+)
 
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -172,7 +164,7 @@ export const auditLogs = sqliteTable(
   (table) => ({
     byUser: index('idx_audit_user').on(table.userId),
   })
-);
+)
 
 export const sessions = sqliteTable(
   'sessions',
@@ -190,4 +182,4 @@ export const sessions = sqliteTable(
     byUser: index('idx_sessions_user').on(table.userId),
     byExpires: index('idx_sessions_expires').on(table.expiresAt),
   })
-);
+)

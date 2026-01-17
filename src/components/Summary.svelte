@@ -1,10 +1,14 @@
 <script>
-  import Card from './ui/Card.svelte';
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
 
-  export let totalIncome = 0;
-  export let totalFixed = 0;
-  export let totalSpent = 0;
-  export let remaining = 0;
+  export let totalIncome = 0
+  export let totalFixed = 0
+  export let totalSpent = 0
+  export let remaining = 0
+
+  $: currencySymbol = $settings.currencySymbol || '฿'
 
   $: items = [
     {
@@ -23,7 +27,7 @@
       label: 'REMAINING',
       value: remaining,
     },
-  ];
+  ]
 </script>
 
 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -39,10 +43,7 @@
             ? 'text-destructive'
             : ''}"
         >
-          ฿{Math.abs(item.value).toLocaleString('en-US', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          })}
+          {currencySymbol}{numeral(Math.abs(item.value)).format('0,0')}
         </div>
       </div>
     </Card>

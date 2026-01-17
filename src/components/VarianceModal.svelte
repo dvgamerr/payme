@@ -1,61 +1,61 @@
 <script>
-  import { TrendingUp, TrendingDown, AlertCircle, PartyPopper } from 'lucide-svelte';
-  import Modal from './ui/Modal.svelte';
+  import { TrendingUp, TrendingDown, AlertCircle, PartyPopper } from 'lucide-svelte'
+  import Modal from './ui/Modal.svelte'
 
-  export let isOpen = false;
-  export let budgets = [];
-  export let totalIncome = 0;
-  export let totalFixed = 0;
-  export let totalBudgeted = 0;
+  export let isOpen = false
+  export let budgets = []
+  export let totalIncome = 0
+  export let totalFixed = 0
+  export let totalBudgeted = 0
 
   function handleClose() {
-    isOpen = false;
+    isOpen = false
   }
 
   $: {
-    const overBudgetItems = [];
-    const underBudgetItems = [];
-    const unplannedItems = [];
+    const overBudgetItems = []
+    const underBudgetItems = []
+    const unplannedItems = []
 
     budgets.forEach((b) => {
-      const variance = b.spent_amount - b.allocated_amount;
+      const variance = b.spent_amount - b.allocated_amount
       const item = {
         label: b.category_label,
         allocated: b.allocated_amount,
         spent: b.spent_amount,
         variance,
         isUnplanned: b.allocated_amount === 0 && b.spent_amount > 0,
-      };
+      }
 
       if (item.isUnplanned) {
-        unplannedItems.push(item);
+        unplannedItems.push(item)
       } else if (variance > 0) {
-        overBudgetItems.push(item);
+        overBudgetItems.push(item)
       } else if (variance < 0) {
-        underBudgetItems.push(item);
+        underBudgetItems.push(item)
       }
-    });
+    })
 
-    overBudgetItems.sort((a, b) => b.variance - a.variance);
-    unplannedItems.sort((a, b) => b.spent - a.spent);
-    underBudgetItems.sort((a, b) => a.variance - b.variance);
+    overBudgetItems.sort((a, b) => b.variance - a.variance)
+    unplannedItems.sort((a, b) => b.spent - a.spent)
+    underBudgetItems.sort((a, b) => a.variance - b.variance)
 
-    overBudget = overBudgetItems;
-    underBudget = underBudgetItems;
-    unplanned = unplannedItems;
+    overBudget = overBudgetItems
+    underBudget = underBudgetItems
+    unplanned = unplannedItems
   }
 
-  let overBudget = [];
-  let underBudget = [];
-  let unplanned = [];
+  let overBudget = []
+  let underBudget = []
+  let unplanned = []
 
-  $: totalOverspend = overBudget.reduce((sum, b) => sum + b.variance, 0);
-  $: totalUnplanned = unplanned.reduce((sum, b) => sum + b.spent, 0);
-  $: totalSaved = underBudget.reduce((sum, b) => sum + Math.abs(b.variance), 0);
-  $: incomeNeeded = totalFixed + totalBudgeted;
-  $: incomeShortfall = incomeNeeded > totalIncome ? incomeNeeded - totalIncome : 0;
-  $: netVariance = totalOverspend + totalUnplanned - totalSaved;
-  $: isOnTrack = netVariance <= 0 && incomeShortfall === 0;
+  $: totalOverspend = overBudget.reduce((sum, b) => sum + b.variance, 0)
+  $: totalUnplanned = unplanned.reduce((sum, b) => sum + b.spent, 0)
+  $: totalSaved = underBudget.reduce((sum, b) => sum + Math.abs(b.variance), 0)
+  $: incomeNeeded = totalFixed + totalBudgeted
+  $: incomeShortfall = incomeNeeded > totalIncome ? incomeNeeded - totalIncome : 0
+  $: netVariance = totalOverspend + totalUnplanned - totalSaved
+  $: isOnTrack = netVariance <= 0 && incomeShortfall === 0
 </script>
 
 <Modal bind:isOpen onClose={handleClose} title="Budget Analysis">

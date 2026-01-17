@@ -1,48 +1,48 @@
 <script>
-  import { createEventDispatcher, onDestroy } from 'svelte';
-  import { X } from 'lucide-svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte'
+  import { X } from 'lucide-svelte'
 
   /**
    * Modal Component
    * @prop {boolean} isOpen - Modal visibility state
    * @prop {string} title - Optional modal title
    */
-  export let isOpen = false;
-  export let title = '';
-  export let onClose = () => {};
+  export let isOpen = false
+  export let title = ''
+  export let onClose = () => {}
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher()
 
   function handleClose() {
-    isOpen = false;
-    onClose();
-    dispatch('close');
+    isOpen = false
+    onClose()
+    dispatch('close')
   }
 
   function handleBackdropClick(e) {
     if (e.target === e.currentTarget) {
-      handleClose();
+      handleClose()
     }
   }
 
   function handleKeydown(e) {
     if (e.key === 'Escape') {
-      handleClose();
+      handleClose()
     }
   }
 
   onDestroy(() => {
     if (typeof document !== 'undefined') {
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''
     }
-  });
+  })
 
   // Reactive statement to handle body overflow
   $: if (typeof document !== 'undefined') {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''
     }
   }
 </script>

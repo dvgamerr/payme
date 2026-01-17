@@ -9,13 +9,13 @@ import {
   text,
   timestamp,
   uniqueIndex,
-} from 'drizzle-orm/pg-core';
+} from 'drizzle-orm/pg-core'
 
 const bytea = customType({
   dataType() {
-    return 'bytea';
+    return 'bytea'
   },
-});
+})
 
 export const users = pgTable(
   'users',
@@ -30,7 +30,7 @@ export const users = pgTable(
   (table) => ({
     usernameUnique: uniqueIndex('users_username_unique').on(table.username),
   })
-);
+)
 
 export const fixedExpenses = pgTable('fixed_expenses', {
   id: serial('id').primaryKey(),
@@ -40,7 +40,7 @@ export const fixedExpenses = pgTable('fixed_expenses', {
   label: text('label').notNull(),
   amount: doublePrecision('amount').notNull(),
   frequency: text('frequency').notNull().default('monthly'), // 'monthly' or 'yearly'
-});
+})
 
 export const userSettings = pgTable('user_settings', {
   id: serial('id').primaryKey(),
@@ -51,7 +51,7 @@ export const userSettings = pgTable('user_settings', {
   baseCurrency: text('base_currency').notNull().default('THB'),
   currencySymbol: text('currency_symbol').notNull().default('฿'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+})
 
 export const budgetCategories = pgTable('budget_categories', {
   id: serial('id').primaryKey(),
@@ -60,7 +60,7 @@ export const budgetCategories = pgTable('budget_categories', {
     .references(() => users.id, { onDelete: 'cascade' }),
   label: text('label').notNull(),
   defaultAmount: doublePrecision('default_amount').notNull(),
-});
+})
 
 export const months = pgTable(
   'months',
@@ -82,7 +82,7 @@ export const months = pgTable(
     ),
     byUserYearMonth: index('idx_months_user_year_month').on(table.userId, table.year, table.month),
   })
-);
+)
 
 export const incomeEntries = pgTable(
   'income_entries',
@@ -97,7 +97,7 @@ export const incomeEntries = pgTable(
   (table) => ({
     byMonth: index('idx_income_month').on(table.monthId),
   })
-);
+)
 
 export const monthlyBudgets = pgTable(
   'monthly_budgets',
@@ -118,7 +118,7 @@ export const monthlyBudgets = pgTable(
     ),
     byMonth: index('idx_monthly_budgets_month').on(table.monthId),
   })
-);
+)
 
 export const items = pgTable(
   'items',
@@ -137,7 +137,7 @@ export const items = pgTable(
   (table) => ({
     byMonth: index('idx_items_month').on(table.monthId),
   })
-);
+)
 
 export const monthlySnapshots = pgTable(
   'monthly_snapshots',
@@ -152,7 +152,7 @@ export const monthlySnapshots = pgTable(
   (table) => ({
     uniqueMonth: uniqueIndex('monthly_snapshots_month_unique').on(table.monthId),
   })
-);
+)
 
 export const auditLogs = pgTable(
   'audit_logs',
@@ -172,7 +172,7 @@ export const auditLogs = pgTable(
   (table) => ({
     byUser: index('idx_audit_user').on(table.userId),
   })
-);
+)
 
 export const sessions = pgTable(
   'sessions',
@@ -188,4 +188,4 @@ export const sessions = pgTable(
     byUser: index('idx_sessions_user').on(table.userId),
     byExpires: index('idx_sessions_expires').on(table.expiresAt),
   })
-);
+)

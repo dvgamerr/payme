@@ -1,7 +1,7 @@
-import { defineConfig } from 'astro/config';
-import svelte from '@astrojs/svelte';
-import tailwindcss from '@tailwindcss/vite';
-import bun from '@nurodev/astro-bun';
+import { defineConfig } from 'astro/config'
+import svelte from '@astrojs/svelte'
+import tailwindcss from '@tailwindcss/vite'
+import bun from '@nurodev/astro-bun'
 
 export default defineConfig({
   adapter: bun(),
@@ -24,4 +24,4 @@ export default defineConfig({
   security: {
     checkOrigin: false,
   },
-});
+})

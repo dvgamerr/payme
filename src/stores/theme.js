@@ -1,79 +1,64 @@
-/**
- * Theme Store
- * Manages dark/light theme state with localStorage persistence
- */
-import { writable } from 'svelte/store';
+import { writable } from 'svelte/store'
 
-const THEME_KEY = 'payme-theme';
-const browser = typeof window !== 'undefined';
+const THEME_KEY = 'payme-theme'
+const browser = typeof window !== 'undefined'
 
 function createThemeStore() {
-  // Initialize theme from localStorage or system preference
   const getInitialTheme = () => {
-    if (!browser) return false;
+    if (!browser) return false
 
-    const stored = localStorage.getItem(THEME_KEY);
+    const stored = localStorage.getItem(THEME_KEY)
     if (stored !== null) {
-      return stored === 'dark';
+      return stored === 'dark'
     }
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  };
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  }
 
-  const { subscribe, set, update } = writable(getInitialTheme());
+  const { subscribe, set, update } = writable(getInitialTheme())
 
   return {
     subscribe,
 
-    /**
-     * Toggle between dark and light theme
-     */
     toggle: () => {
       update((isDark) => {
-        const newValue = !isDark;
+        const newValue = !isDark
         if (browser) {
-          localStorage.setItem(THEME_KEY, newValue ? 'dark' : 'light');
+          localStorage.setItem(THEME_KEY, newValue ? 'dark' : 'light')
           if (newValue) {
-            document.documentElement.classList.add('dark');
+            document.documentElement.classList.add('dark')
           } else {
-            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('dark')
           }
         }
-        return newValue;
-      });
+        return newValue
+      })
     },
 
-    /**
-     * Set theme explicitly
-     * @param {boolean} isDark
-     */
     set: (isDark) => {
       if (browser) {
-        localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+        localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light')
         if (isDark) {
-          document.documentElement.classList.add('dark');
+          document.documentElement.classList.add('dark')
         } else {
-          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.remove('dark')
         }
       }
-      set(isDark);
+      set(isDark)
     },
 
-    /**
-     * Initialize theme on mount
-     */
     init: () => {
       if (browser) {
-        const isDark = getInitialTheme();
+        const isDark = getInitialTheme()
         if (isDark) {
-          document.documentElement.classList.add('dark');
+          document.documentElement.classList.add('dark')
         } else {
-          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.remove('dark')
         }
-        set(isDark);
+        set(isDark)
       }
     },
-  };
+  }
 }
 
-export const theme = createThemeStore();
+export const theme = createThemeStore()

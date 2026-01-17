@@ -1,12 +1,8 @@
-/**
- * GET /api/months/[id]
- * Get specific month with full summary
- */
-import { and, desc, eq, sql } from 'drizzle-orm';
-import { db, schema } from '../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../lib/middleware.js';
+import { and, desc, eq, sql } from 'drizzle-orm'
+import { db, schema } from '../../../lib/db.js'
+import { requireAuth, authResponse } from '../../../lib/middleware.js'
 
-const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema;
+const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema
 
 async function getMonthSummary(monthId, userId) {
   const monthRows = await db
@@ -20,12 +16,12 @@ async function getMonthSummary(monthId, userId) {
     })
     .from(months)
     .where(and(eq(months.id, monthId), eq(months.userId, userId)))
-    .limit(1);
+    .limit(1)
 
-  const month = monthRows[0];
-  if (!month) return null;
+  const month = monthRows[0]
+  if (!month) return null
 
-  month.is_closed = Boolean(month.is_closed);
+  month.is_closed = Boolean(month.is_closed)
 
   const income_entries = await db
     .select({
@@ -35,7 +31,7 @@ async function getMonthSummary(monthId, userId) {
       amount: incomeEntries.amount,
     })
     .from(incomeEntries)
-    .where(eq(incomeEntries.monthId, monthId));
+    .where(eq(incomeEntries.monthId, monthId))
 
   const fixed_expenses = await db
     .select({
@@ -45,7 +41,7 @@ async function getMonthSummary(monthId, userId) {
       amount: fixedExpenses.amount,
     })
     .from(fixedExpenses)
-    .where(eq(fixedExpenses.userId, userId));
+    .where(eq(fixedExpenses.userId, userId))
 
   const budgets = await db
     .select({
@@ -72,7 +68,7 @@ async function getMonthSummary(monthId, userId) {
       monthlyBudgets.categoryId,
       budgetCategories.label,
       monthlyBudgets.allocatedAmount
-    );
+    )
 
   const itemsRows = await db
     .select({
@@ -87,13 +83,13 @@ async function getMonthSummary(monthId, userId) {
     .from(items)
     .innerJoin(budgetCategories, eq(budgetCategories.id, items.categoryId))
     .where(eq(items.monthId, monthId))
-    .orderBy(desc(items.spentOn));
+    .orderBy(desc(items.spentOn))
 
-  const total_income = income_entries.reduce((sum, e) => sum + e.amount, 0);
-  const total_fixed = fixed_expenses.reduce((sum, e) => sum + e.amount, 0);
-  const total_budgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0);
-  const total_spent = itemsRows.reduce((sum, i) => sum + i.amount, 0);
-  const remaining = total_income - total_fixed - total_spent;
+  const total_income = income_entries.reduce((sum, e) => sum + e.amount, 0)
+  const total_fixed = fixed_expenses.reduce((sum, e) => sum + e.amount, 0)
+  const total_budgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
+  const total_spent = itemsRows.reduce((sum, i) => sum + i.amount, 0)
+  const remaining = total_income - total_fixed - total_spent
 
   return {
     month,
@@ -106,35 +102,35 @@ async function getMonthSummary(monthId, userId) {
     total_budgeted,
     total_spent,
     remaining,
-  };
+  }
 }
 
 export async function GET({ params, cookies }) {
   try {
-    const user = await requireAuth(cookies);
-    const monthId = parseInt(params.id);
+    const user = await requireAuth(cookies)
+    const monthId = parseInt(params.id)
 
-    const summary = await getMonthSummary(monthId, user.id);
+    const summary = await getMonthSummary(monthId, user.id)
 
     if (!summary) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
-      });
+      })
     }
 
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   } catch (error) {
     if (error.message === 'Unauthorized') {
-      return authResponse();
+      return authResponse()
     }
-    console.error('Get month error:', error);
+    console.error('Get month error:', error)
     return new Response(JSON.stringify({ error: 'Failed to get month' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   }
 }

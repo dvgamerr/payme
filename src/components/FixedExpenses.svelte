@@ -1,68 +1,100 @@
 <script>
-  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte';
-  import { api } from '../lib/api.js';
-  import Card from './ui/Card.svelte';
-  import Input from './ui/Input.svelte';
-  import Button from './ui/Button.svelte';
-  import Modal from './ui/Modal.svelte';
+  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte'
+  import { api } from '../lib/api.js'
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
+  import Input from './ui/Input.svelte'
+  import Select from './ui/Select.svelte'
+  import Button from './ui/Button.svelte'
+  import Modal from './ui/Modal.svelte'
 
-  export let expenses = [];
-  export let onUpdate = () => {};
+  export let expenses = []
+  export let onUpdate = () => {}
 
-  let isManaging = false;
-  let isAdding = false;
-  let editingId = null;
-  let label = '';
-  let amount = '';
+  let isManaging = false
+  let isAdding = false
+  let editingId = null
+  let label = ''
+  let amount = ''
+  let frequency = 'monthly'
+  let currencySymbol = '฿'
+
+  // Subscribe to settings for currency symbol
+  $: currencySymbol = $settings.currencySymbol || '฿'
 
   // Reset form when modal closes
   $: if (!isManaging) {
-    isAdding = false;
-    editingId = null;
-    label = '';
-    amount = '';
+    isAdding = false
+    editingId = null
+    label = ''
+    amount = ''
+    frequency = 'monthly'
   }
 
   function closeModal() {
-    isManaging = false;
+    isManaging = false
   }
 
-  $: total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  // Calculate monthly equivalent for total
+  $: total = expenses.reduce((sum, e) => {
+    const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
+    return sum + monthlyAmount
+  }, 0)
 
   async function handleAdd() {
-    if (!label || !amount) return;
-    await api.fixedExpenses.create({ label, amount: parseFloat(amount) });
-    label = '';
-    amount = '';
-    isAdding = false;
-    await onUpdate();
+    if (!label || !amount) return
+    await api.fixedExpenses.create({
+      label,
+      amount: parseFloat(amount),
+      frequency,
+    })
+    label = ''
+    amount = ''
+    frequency = 'monthly'
+    isAdding = false
+    await onUpdate()
   }
 
   async function handleUpdate(id) {
-    if (!label || !amount) return;
-    await api.fixedExpenses.update(id, { label, amount: parseFloat(amount) });
-    editingId = null;
-    label = '';
-    amount = '';
-    await onUpdate();
+    if (!label || !amount) return
+    await api.fixedExpenses.update(id, {
+      label,
+      amount: parseFloat(amount),
+      frequency,
+    })
+    editingId = null
+    label = ''
+    amount = ''
+    frequency = 'monthly'
+    await onUpdate()
   }
 
   async function handleDelete(id) {
-    await api.fixedExpenses.delete(id);
-    await onUpdate();
+    await api.fixedExpenses.delete(id)
+    await onUpdate()
   }
 
   function startEdit(expense) {
-    editingId = expense.id;
-    label = expense.label;
-    amount = expense.amount.toString();
+    editingId = expense.id
+    label = expense.label
+    amount = expense.amount.toString()
+    frequency = expense.frequency || 'monthly'
   }
 
   function cancelEdit() {
-    editingId = null;
-    label = '';
-    amount = '';
-    isAdding = false;
+    editingId = null
+    label = ''
+    amount = ''
+    frequency = 'monthly'
+    isAdding = false
+  }
+
+  function getDisplayAmount(expense) {
+    if (expense.frequency === 'yearly') {
+      return `${currencySymbol}${numeral(expense.amount).format('0,0')}/ปี (${currencySymbol}${numeral(expense.amount / 12).format('0,0')}/เดือน)`
+    }
+    return `${currencySymbol}${numeral(expense.amount).format('0,0')}/เดือน`
   }
 </script>
 
@@ -84,7 +116,7 @@
           {expense.label}
         </span>
         <span class="text-muted-foreground text-sm">
-          ฿{expense.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+          {getDisplayAmount(expense)}
         </span>
       </div>
     {/each}
@@ -95,9 +127,9 @@
 
   {#if expenses.length > 0}
     <div class="border-border mt-4 flex justify-between border-t pt-3">
-      <span class="text-foreground text-sm font-medium"> Total </span>
+      <span class="text-foreground text-sm font-medium"> Total (Monthly) </span>
       <span class="text-foreground text-sm font-semibold">
-        ฿{total.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+        {currencySymbol}{numeral(total).format('0,0')}
       </span>
     </div>
   {/if}
@@ -112,8 +144,17 @@
             <div class="flex-1">
               <Input placeholder="Label" bind:value={label} />
             </div>
-            <div class="w-24">
-              <Input type="number" placeholder="Amount" bind:value={amount} />
+            <div class="w-32">
+              <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
+            </div>
+            <div class="w-28">
+              <Select
+                bind:value={frequency}
+                options={[
+                  { value: 'monthly', label: 'รายเดือน' },
+                  { value: 'yearly', label: 'รายปี' },
+                ]}
+              />
             </div>
             <button
               on:click={() => handleUpdate(expense.id)}
@@ -131,7 +172,7 @@
           >
             <span class="text-sm">{expense.label}</span>
             <div class="flex items-center gap-2">
-              <span class="text-sm">${expense.amount.toFixed(2)}</span>
+              <span class="text-sm">{getDisplayAmount(expense)}</span>
               <button on:click={() => startEdit(expense)} class="p-1 opacity-70 hover:opacity-100">
                 <Pen size={14} />
               </button>
@@ -152,8 +193,17 @@
         <div class="flex-1">
           <Input placeholder="Label" bind:value={label} />
         </div>
-        <div class="w-24">
-          <Input type="number" placeholder="Amount" bind:value={amount} />
+        <div class="w-32">
+          <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
+        </div>
+        <div class="w-28">
+          <Select
+            bind:value={frequency}
+            options={[
+              { value: 'monthly', label: 'รายเดือน' },
+              { value: 'yearly', label: 'รายปี' },
+            ]}
+          />
         </div>
         <Button size="sm" on:click={handleAdd}>
           <Check size={16} />

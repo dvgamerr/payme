@@ -1,14 +1,14 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import { getUserFromSession } from '../lib/auth.js';
+import Layout from '../layouts/Layout.astro'
+import { getUserFromSession } from '../lib/auth.js'
 
 // Check if user is already authenticated
-const sessionId = Astro.cookies.get('session_id')?.value;
-const user = await getUserFromSession(sessionId);
+const sessionId = Astro.cookies.get('session_id')?.value
+const user = await getUserFromSession(sessionId)
 
 // Redirect to dashboard if authenticated
 if (user) {
-  return Astro.redirect('/');
+  return Astro.redirect('/')
 }
 ---
 
@@ -96,31 +96,31 @@ if (user) {
   </div>
 
   <script>
-    const form = document.getElementById('registerForm') as HTMLFormElement | null;
-    const errorDiv = document.getElementById('error') as HTMLDivElement | null;
+    const form = document.getElementById('registerForm') as HTMLFormElement | null
+    const errorDiv = document.getElementById('error') as HTMLDivElement | null
 
     if (form && errorDiv) {
       form.addEventListener('submit', async (e: SubmitEvent) => {
-        e.preventDefault();
+        e.preventDefault()
 
-        const formData = new FormData(form);
-        const username = formData.get('username') as string;
-        const password = formData.get('password') as string;
-        const confirmPassword = formData.get('confirmPassword') as string;
+        const formData = new FormData(form)
+        const username = formData.get('username') as string
+        const password = formData.get('password') as string
+        const confirmPassword = formData.get('confirmPassword') as string
 
-        errorDiv.classList.add('hidden');
+        errorDiv.classList.add('hidden')
 
         // Client-side validation
         if (password !== confirmPassword) {
-          errorDiv.textContent = 'Passwords do not match';
-          errorDiv.classList.remove('hidden');
-          return;
+          errorDiv.textContent = 'Passwords do not match'
+          errorDiv.classList.remove('hidden')
+          return
         }
 
         if (password.length < 6) {
-          errorDiv.textContent = 'Password must be at least 6 characters';
-          errorDiv.classList.remove('hidden');
-          return;
+          errorDiv.textContent = 'Password must be at least 6 characters'
+          errorDiv.classList.remove('hidden')
+          return
         }
 
         try {
@@ -129,20 +129,20 @@ if (user) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
             credentials: 'include',
-          });
+          })
 
           if (response.ok) {
-            window.location.href = '/';
+            window.location.href = '/'
           } else {
-            const data = await response.json();
-            errorDiv.textContent = data.error || 'Registration failed';
-            errorDiv.classList.remove('hidden');
+            const data = await response.json()
+            errorDiv.textContent = data.error || 'Registration failed'
+            errorDiv.classList.remove('hidden')
           }
         } catch (error) {
-          errorDiv.textContent = 'Network error. Please try again.';
-          errorDiv.classList.remove('hidden');
+          errorDiv.textContent = 'Network error. Please try again.'
+          errorDiv.classList.remove('hidden')
         }
-      });
+      })
     }
   </script>
 </Layout>

@@ -5,19 +5,19 @@
    * @prop {number} max - Maximum value
    * @prop {boolean} showOverage - Show overage text
    */
-  export let value = 0;
-  export let max = 100;
-  export let showOverage = true;
+  export let value = 0
+  export let max = 100
+  export let showOverage = true
 
-  $: percentage = max > 0 ? (value / max) * 100 : 0;
-  $: isOver = value > max;
-  $: overage = value - max;
+  $: percentage = max > 0 ? (value / max) * 100 : 0
+  $: isOver = value > max
+  $: overage = value - max
 
-  export let color = 'chart-1';
+  export let color = 'chart-1'
 
   function getColor() {
-    if (percentage >= 100) return 'bg-chart-3';
-    return `bg-${color}`;
+    if (percentage >= 100) return 'bg-chart-3'
+    return `bg-${color}`
   }
 </script>
 

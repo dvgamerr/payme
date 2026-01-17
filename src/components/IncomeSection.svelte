@@ -1,63 +1,67 @@
 <script>
-  import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte';
-  import { api } from '../lib/api.js';
-  import Card from './ui/Card.svelte';
-  import Input from './ui/Input.svelte';
+  import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte'
+  import { api } from '../lib/api.js'
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
+  import Input from './ui/Input.svelte'
 
-  export let monthId;
-  export let entries = [];
-  export let isReadOnly = false;
-  export let onUpdate = () => {};
+  export let monthId
+  export let entries = []
+  export let isReadOnly = false
+  export let onUpdate = () => {}
 
-  let isAdding = false;
-  let editingId = null;
-  let label = '';
-  let amount = '';
+  $: currencySymbol = $settings.currencySymbol || '฿'
+
+  let isAdding = false
+  let editingId = null
+  let label = ''
+  let amount = ''
 
   async function handleAdd() {
     if (!label || !amount || !monthId) {
-      console.error('Missing required data:', { label, amount, monthId });
-      return;
+      console.error('Missing required data:', { label, amount, monthId })
+      return
     }
-    await api.income.create(monthId, { label, amount: parseFloat(amount) });
-    label = '';
-    amount = '';
-    isAdding = false;
-    await onUpdate();
+    await api.income.create(monthId, { label, amount: parseFloat(amount) })
+    label = ''
+    amount = ''
+    isAdding = false
+    await onUpdate()
   }
 
   async function handleUpdate(id) {
     if (!label || !amount || !monthId) {
-      console.error('Missing required data:', { label, amount, monthId, id });
-      return;
+      console.error('Missing required data:', { label, amount, monthId, id })
+      return
     }
-    await api.income.update(monthId, id, { label, amount: parseFloat(amount) });
-    editingId = null;
-    label = '';
-    amount = '';
-    await onUpdate();
+    await api.income.update(monthId, id, { label, amount: parseFloat(amount) })
+    editingId = null
+    label = ''
+    amount = ''
+    await onUpdate()
   }
 
   async function handleDelete(id) {
     if (!monthId) {
-      console.error('Missing monthId:', monthId);
-      return;
+      console.error('Missing monthId:', monthId)
+      return
     }
-    await api.income.delete(monthId, id);
-    await onUpdate();
+    await api.income.delete(monthId, id)
+    await onUpdate()
   }
 
   function startEdit(entry) {
-    editingId = entry.id;
-    label = entry.label;
-    amount = entry.amount.toString();
+    editingId = entry.id
+    label = entry.label
+    amount = entry.amount.toString()
   }
 
   function cancelEdit() {
-    editingId = null;
-    label = '';
-    amount = '';
-    isAdding = false;
+    editingId = null
+    label = ''
+    amount = ''
+    isAdding = false
   }
 </script>
 
@@ -82,8 +86,8 @@
             <div class="flex-1">
               <Input placeholder="Label" bind:value={label} />
             </div>
-            <div class="w-24">
-              <Input type="number" placeholder="Amount" bind:value={amount} />
+            <div class="w-32">
+              <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
             </div>
             <button
               on:click={() => handleUpdate(entry.id)}
@@ -104,7 +108,7 @@
             </span>
             <div class="flex items-center gap-2">
               <span class="text-foreground text-sm font-medium">
-                ฿{entry.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                {currencySymbol}{numeral(entry.amount).format('0,0')}
               </span>
               {#if !isReadOnly}
                 <button
@@ -131,8 +135,8 @@
         <div class="flex-1">
           <Input placeholder="Label" bind:value={label} />
         </div>
-        <div class="w-24">
-          <Input type="number" placeholder="Amount" bind:value={amount} />
+        <div class="w-32">
+          <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
         </div>
         <button on:click={handleAdd} class="p-1.5 opacity-70 hover:opacity-100">
           <Check size={16} />

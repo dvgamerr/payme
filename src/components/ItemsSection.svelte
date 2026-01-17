@@ -1,70 +1,73 @@
 <script>
-  import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte';
-  import { api } from '../lib/api.js';
-  import Card from './ui/Card.svelte';
-  import Input from './ui/Input.svelte';
-  import Select from './ui/Select.svelte';
-  import Button from './ui/Button.svelte';
+  import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte'
+  import { api } from '../lib/api.js'
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
+  import Input from './ui/Input.svelte'
+  import Select from './ui/Select.svelte'
+  import Button from './ui/Button.svelte'
 
-  export let monthId;
-  export let items = [];
-  export let categories = [];
-  export let isReadOnly = false;
-  export let onUpdate = () => {};
+  export let monthId
+  export let items = []
+  export let categories = []
+  export let isReadOnly = false
+  export let onUpdate = () => {}
 
-  let isAdding = false;
-  let editingId = null;
-  let description = '';
-  let amount = '';
-  let categoryId = '';
-  let spentOn = new Date().toISOString().split('T')[0];
+  let isAdding = false
+  let editingId = null
+  let description = ''
+  let amount = ''
+  let categoryId = ''
+  let spentOn = new Date().toISOString().split('T')[0]
 
-  $: categoryOptions = categories.map((c) => ({ value: c.id, label: c.label }));
+  $: currencySymbol = $settings.currencySymbol || '฿'
+  $: categoryOptions = categories.map((c) => ({ value: c.id, label: c.label }))
 
   async function handleAdd() {
-    if (!description || !amount || !categoryId) return;
+    if (!description || !amount || !categoryId) return
     await api.items.create(monthId, {
       description,
       amount: parseFloat(amount),
       category_id: parseInt(categoryId),
       spent_on: spentOn,
-    });
-    resetForm();
-    await onUpdate();
+    })
+    resetForm()
+    await onUpdate()
   }
 
   async function handleUpdate(id) {
-    if (!description || !amount || !categoryId) return;
+    if (!description || !amount || !categoryId) return
     await api.items.update(monthId, id, {
       description,
       amount: parseFloat(amount),
       category_id: parseInt(categoryId),
       spent_on: spentOn,
-    });
-    resetForm();
-    await onUpdate();
+    })
+    resetForm()
+    await onUpdate()
   }
 
   async function handleDelete(id) {
-    await api.items.delete(monthId, id);
-    await onUpdate();
+    await api.items.delete(monthId, id)
+    await onUpdate()
   }
 
   function startEdit(item) {
-    editingId = item.id;
-    description = item.description;
-    amount = item.amount.toString();
-    categoryId = item.category_id.toString();
-    spentOn = item.spent_on;
+    editingId = item.id
+    description = item.description
+    amount = item.amount.toString()
+    categoryId = item.category_id.toString()
+    spentOn = item.spent_on
   }
 
   function resetForm() {
-    editingId = null;
-    description = '';
-    amount = '';
-    categoryId = '';
-    spentOn = new Date().toISOString().split('T')[0];
-    isAdding = false;
+    editingId = null
+    description = ''
+    amount = ''
+    categoryId = ''
+    spentOn = new Date().toISOString().split('T')[0]
+    isAdding = false
   }
 </script>
 
@@ -74,9 +77,9 @@
     {#if !isReadOnly && !isAdding}
       <button
         on:click={() => {
-          isAdding = true;
+          isAdding = true
           if (categories.length > 0) {
-            categoryId = categories[0].id.toString();
+            categoryId = categories[0].id.toString()
           }
         }}
         class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
@@ -100,7 +103,7 @@
     <div class="border-border mb-4 border-t pt-4">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
         <Input placeholder="Description" bind:value={description} />
-        <Input type="number" placeholder="Amount" bind:value={amount} />
+        <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
         <Select options={categoryOptions} bind:value={categoryId} />
         <Input type="date" bind:value={spentOn} />
       </div>
@@ -145,9 +148,10 @@
               </td>
               <td class="py-2 text-right">
                 <Input
-                  type="number"
+                  type="text"
                   placeholder="Amount"
                   bind:value={amount}
+                  formatAsNumber={true}
                   className="text-xs text-right"
                 />
               </td>
@@ -185,7 +189,7 @@
                 </span>
               </td>
               <td class="text-foreground py-3 text-right text-sm font-medium">
-                ฿{item.amount.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                {currencySymbol}{numeral(item.amount).format('0,0')}
               </td>
               {#if !isReadOnly}
                 <td class="py-2">

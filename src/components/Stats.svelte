@@ -1,9 +1,9 @@
 <script>
-  import { onMount } from 'svelte';
-  import { BarChart3 } from 'lucide-svelte';
-  import { api } from '../lib/api.js';
-  import Modal from './ui/Modal.svelte';
-  import Button from './ui/Button.svelte';
+  import { onMount } from 'svelte'
+  import { BarChart3 } from 'lucide-svelte'
+  import { api } from '../lib/api.js'
+  import Modal from './ui/Modal.svelte'
+  import Button from './ui/Button.svelte'
 
   const MONTH_NAMES = [
     'Jan',
@@ -18,37 +18,37 @@
     'Oct',
     'Nov',
     'Dec',
-  ];
+  ]
 
-  let isOpen = false;
-  let stats = null;
-  let loading = false;
+  let isOpen = false
+  let stats = null
+  let loading = false
 
   // Reactive statement to load stats when modal opens
   $: if (isOpen && !stats) {
-    loadStats();
+    loadStats()
   }
 
   async function loadStats() {
-    loading = true;
+    loading = true
     try {
-      stats = await api.stats.get();
+      stats = await api.stats.get()
     } catch (err) {
-      console.error('Failed to load stats:', err);
+      console.error('Failed to load stats:', err)
     } finally {
-      loading = false;
+      loading = false
     }
   }
 
   function openModal() {
-    isOpen = true;
+    isOpen = true
   }
 
   function closeModal() {
-    isOpen = false;
+    isOpen = false
     // Reset state when closing
-    stats = null;
-    loading = false;
+    stats = null
+    loading = false
   }
 
   $: trendData =
@@ -60,7 +60,7 @@
         income: m.total_income,
         spent: m.total_spent,
         net: m.net,
-      })) || [];
+      })) || []
 </script>
 
 <Button variant="ghost" size="sm" on:click={openModal}>

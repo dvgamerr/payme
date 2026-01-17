@@ -1,16 +1,16 @@
 <script>
-  import { Moon, Sun, LogOut, ChartColumn, Settings } from 'lucide-svelte';
-  import { onMount } from 'svelte';
-  import { theme } from '../stores/theme.js';
-  import { auth } from '../stores/auth.js';
+  import { Moon, Sun, LogOut, ChartColumn, Settings } from 'lucide-svelte'
+  import { onMount } from 'svelte'
+  import { theme } from '../stores/theme.js'
+  import { auth } from '../stores/auth.js'
 
   // Initialize theme on mount
   onMount(() => {
-    theme.init();
-  });
+    theme.init()
+  })
 
-  $: isDark = $theme;
-  $: user = $auth.user;
+  $: isDark = $theme
+  $: user = $auth.user
 </script>
 
 <div class="min-h-screen">
@@ -22,18 +22,20 @@
       </div>
       <div class="flex items-center gap-1">
         {#if user}
-          <button
+          <a
+            href="/stats"
             class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
             title="Statistics"
           >
             <ChartColumn size={16} />
-          </button>
-          <button
+          </a>
+          <a
+            href="/settings"
             class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
             title="Settings"
           >
             <Settings size={16} />
-          </button>
+          </a>
         {/if}
         <button
           on:click={() => theme.toggle()}

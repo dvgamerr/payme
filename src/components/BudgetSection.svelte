@@ -1,86 +1,90 @@
 <script>
-  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte';
-  import { api } from '../lib/api.js';
-  import Card from './ui/Card.svelte';
-  import Input from './ui/Input.svelte';
-  import Button from './ui/Button.svelte';
-  import ProgressBar from './ui/ProgressBar.svelte';
-  import Modal from './ui/Modal.svelte';
+  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte'
+  import { api } from '../lib/api.js'
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
+  import Input from './ui/Input.svelte'
+  import Button from './ui/Button.svelte'
+  import ProgressBar from './ui/ProgressBar.svelte'
+  import Modal from './ui/Modal.svelte'
 
-  export let monthId;
-  export let budgets = [];
-  export let categories = [];
-  export let isReadOnly = false;
-  export let onUpdate = () => {};
+  export let monthId
+  export let budgets = []
+  export let categories = []
+  export let isReadOnly = false
+  export let onUpdate = () => {}
 
-  let isManaging = false;
-  let isAddingCategory = false;
-  let editingCategoryId = null;
-  let editingBudgetId = null;
-  let label = '';
-  let amount = '';
+  let isManaging = false
+  let isAddingCategory = false
+  let editingCategoryId = null
+  let editingBudgetId = null
+  let label = ''
+  let amount = ''
+
+  $: currencySymbol = $settings.currencySymbol || '฿'
 
   // Reset form when modal closes
   $: if (!isManaging) {
-    isAddingCategory = false;
-    editingCategoryId = null;
-    editingBudgetId = null;
-    label = '';
-    amount = '';
+    isAddingCategory = false
+    editingCategoryId = null
+    editingBudgetId = null
+    label = ''
+    amount = ''
   }
 
   function closeModal() {
-    isManaging = false;
+    isManaging = false
   }
 
   async function handleAddCategory() {
-    if (!label || !amount) return;
-    await api.categories.create({ label, default_amount: parseFloat(amount) });
-    label = '';
-    amount = '';
-    isAddingCategory = false;
-    await onUpdate();
+    if (!label || !amount) return
+    await api.categories.create({ label, default_amount: parseFloat(amount) })
+    label = ''
+    amount = ''
+    isAddingCategory = false
+    await onUpdate()
   }
 
   async function handleUpdateCategory(id) {
-    if (!label || !amount) return;
-    await api.categories.update(id, { label, default_amount: parseFloat(amount) });
-    editingCategoryId = null;
-    label = '';
-    amount = '';
-    await onUpdate();
+    if (!label || !amount) return
+    await api.categories.update(id, { label, default_amount: parseFloat(amount) })
+    editingCategoryId = null
+    label = ''
+    amount = ''
+    await onUpdate()
   }
 
   async function handleDeleteCategory(id) {
-    await api.categories.delete(id);
-    await onUpdate();
+    await api.categories.delete(id)
+    await onUpdate()
   }
 
   async function handleUpdateBudget(budgetId) {
-    if (!amount) return;
-    await api.budgets.update(monthId, budgetId, parseFloat(amount));
-    editingBudgetId = null;
-    amount = '';
-    await onUpdate();
+    if (!amount) return
+    await api.budgets.update(monthId, budgetId, parseFloat(amount))
+    editingBudgetId = null
+    amount = ''
+    await onUpdate()
   }
 
   function startEditCategory(cat) {
-    editingCategoryId = cat.id;
-    label = cat.label;
-    amount = cat.default_amount.toString();
+    editingCategoryId = cat.id
+    label = cat.label
+    amount = cat.default_amount.toString()
   }
 
   function startEditBudget(budget) {
-    editingBudgetId = budget.id;
-    amount = budget.allocated_amount.toString();
+    editingBudgetId = budget.id
+    amount = budget.allocated_amount.toString()
   }
 
   function cancelEdit() {
-    editingCategoryId = null;
-    editingBudgetId = null;
-    label = '';
-    amount = '';
-    isAddingCategory = false;
+    editingCategoryId = null
+    editingBudgetId = null
+    label = ''
+    amount = ''
+    isAddingCategory = false
   }
 </script>
 
@@ -104,7 +108,7 @@
               <div class="mb-1 text-sm">{budget.category_label}</div>
             </div>
             <div class="w-24">
-              <Input type="number" placeholder="Budget" bind:value={amount} />
+              <Input type="text" placeholder="Budget" bind:value={amount} formatAsNumber={true} />
             </div>
             <button
               on:click={() => handleUpdateBudget(budget.id)}
@@ -127,10 +131,9 @@
               </span>
               <div class="flex items-center gap-2">
                 <span class="text-muted-foreground text-xs">
-                  {budget.spent_amount.toLocaleString('en-US', { minimumFractionDigits: 0 })} / {budget.allocated_amount.toLocaleString(
-                    'en-US',
-                    { minimumFractionDigits: 0 }
-                  )}
+                  {currencySymbol}{numeral(budget.spent_amount).format('0,0')} / {currencySymbol}{numeral(
+                    budget.allocated_amount
+                  ).format('0,0')}
                 </span>
                 {#if !isReadOnly}
                   <button
@@ -172,7 +175,7 @@
               <Input placeholder="Label" bind:value={label} />
             </div>
             <div class="w-24">
-              <Input type="number" placeholder="Default" bind:value={amount} />
+              <Input type="text" placeholder="Default" bind:value={amount} formatAsNumber={true} />
             </div>
             <button
               on:click={() => handleUpdateCategory(cat.id)}
@@ -189,7 +192,7 @@
             <span class="text-foreground text-sm">{cat.label}</span>
             <div class="flex items-center gap-2">
               <span class="text-muted-foreground text-xs">
-                ฿{cat.default_amount.toLocaleString('en-US', { minimumFractionDigits: 0 })} default
+                {currencySymbol}{numeral(cat.default_amount).format('0,0')} default
               </span>
               <button
                 on:click={() => startEditCategory(cat)}

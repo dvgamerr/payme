@@ -1,12 +1,15 @@
 <script>
-  import { TrendingUp, HelpCircle } from 'lucide-svelte';
-  import Card from './ui/Card.svelte';
+  import { TrendingUp, HelpCircle } from 'lucide-svelte'
+  import { settings } from '../stores/settings.js'
+  import numeral from 'numeral'
+  import Card from './ui/Card.svelte'
 
-  export let savings = 0;
-  export let remaining = 0;
-  export let onAnalyzeClick = null;
+  export let savings = 0
+  export let remaining = 0
+  export let onAnalyzeClick = null
 
-  $: projected = savings + remaining;
+  $: currencySymbol = $settings.currencySymbol || '฿'
+  $: projected = savings + remaining
 </script>
 
 <Card className="!p-3">
@@ -16,7 +19,7 @@
   </div>
   <div class="flex items-center justify-between">
     <span class="text-sage-700 dark:text-sage-400 text-sm font-semibold">
-      ${projected.toFixed(2)}
+      {currencySymbol}{numeral(projected).format('0,0')}
     </span>
     {#if onAnalyzeClick}
       <button

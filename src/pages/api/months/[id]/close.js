@@ -1,17 +1,13 @@
-/**
- * POST /api/months/[id]/close
- * Close a month (lock editing)
- */
-import { and, eq } from 'drizzle-orm';
-import { db, nowSql, schema } from '../../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../../lib/middleware.js';
+import { and, eq } from 'drizzle-orm'
+import { db, nowSql, schema } from '../../../../lib/db.js'
+import { requireAuth, authResponse } from '../../../../lib/middleware.js'
 
-const { months } = schema;
+const { months } = schema
 
 export async function POST({ params, cookies }) {
   try {
-    const user = await requireAuth(cookies);
-    const id = parseInt(params.id);
+    const user = await requireAuth(cookies)
+    const id = parseInt(params.id)
 
     // Verify month belongs to user
     const monthRows = await db
@@ -25,29 +21,29 @@ export async function POST({ params, cookies }) {
       })
       .from(months)
       .where(and(eq(months.id, id), eq(months.userId, user.id)))
-      .limit(1);
-    const month = monthRows[0];
+      .limit(1)
+    const month = monthRows[0]
 
     if (!month) {
       return new Response(JSON.stringify({ error: 'Month not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
-      });
+      })
     }
 
-    if (Boolean(month.is_closed)) {
+    if (month.is_closed) {
       return new Response(JSON.stringify({ error: 'Month already closed' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
-      });
+      })
     }
 
     // Check if it's the last day of the month
-    const now = new Date();
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const currentDay = now.getDate();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
+    const now = new Date()
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const currentDay = now.getDate()
+    const currentMonth = now.getMonth() + 1
+    const currentYear = now.getFullYear()
 
     if (
       month.year !== currentYear ||
@@ -62,11 +58,11 @@ export async function POST({ params, cookies }) {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         }
-      );
+      )
     }
 
     // Close the month
-    await db.update(months).set({ isClosed: true, closedAt: nowSql }).where(eq(months.id, id));
+    await db.update(months).set({ isClosed: true, closedAt: nowSql }).where(eq(months.id, id))
 
     // Get updated month
     const updatedRows = await db
@@ -80,22 +76,22 @@ export async function POST({ params, cookies }) {
       })
       .from(months)
       .where(and(eq(months.id, id), eq(months.userId, user.id)))
-      .limit(1);
-    const updatedMonth = updatedRows[0];
-    updatedMonth.is_closed = Boolean(updatedMonth.is_closed);
+      .limit(1)
+    const updatedMonth = updatedRows[0]
+    updatedMonth.is_closed = Boolean(updatedMonth.is_closed)
 
     return new Response(JSON.stringify(updatedMonth), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   } catch (error) {
     if (error.message === 'Unauthorized') {
-      return authResponse();
+      return authResponse()
     }
-    console.error('Close month error:', error);
+    console.error('Close month error:', error)
     return new Response(JSON.stringify({ error: 'Failed to close month' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   }
 }

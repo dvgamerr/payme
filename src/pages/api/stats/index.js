@@ -1,33 +1,29 @@
-/**
- * GET /api/stats
- * Get statistics: category comparisons and monthly trends
- */
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
-import { db, schema } from '../../../lib/db.js';
-import { requireAuth, authResponse } from '../../../lib/middleware.js';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { db, schema } from '../../../lib/db.js'
+import { requireAuth, authResponse } from '../../../lib/middleware.js'
 
-const { budgetCategories, fixedExpenses, incomeEntries, items, months } = schema;
+const { budgetCategories, fixedExpenses, incomeEntries, items, months } = schema
 
 export async function GET({ cookies }) {
   try {
-    const user = await requireAuth(cookies);
+    const user = await requireAuth(cookies)
 
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth() + 1
 
-    let prevYear = currentYear;
-    let prevMonth = currentMonth - 1;
+    let prevYear = currentYear
+    let prevMonth = currentMonth - 1
     if (prevMonth === 0) {
-      prevMonth = 12;
-      prevYear--;
+      prevMonth = 12
+      prevYear--
     }
 
     const categories = await db
       .select({ id: budgetCategories.id, label: budgetCategories.label })
       .from(budgetCategories)
       .where(eq(budgetCategories.userId, user.id))
-      .orderBy(asc(budgetCategories.label));
+      .orderBy(asc(budgetCategories.label))
 
     const currentSpent = await db
       .select({
@@ -43,7 +39,7 @@ export async function GET({ cookies }) {
           eq(months.month, currentMonth)
         )
       )
-      .groupBy(items.categoryId);
+      .groupBy(items.categoryId)
 
     const prevSpent = await db
       .select({
@@ -55,18 +51,18 @@ export async function GET({ cookies }) {
       .where(
         and(eq(months.userId, user.id), eq(months.year, prevYear), eq(months.month, prevMonth))
       )
-      .groupBy(items.categoryId);
+      .groupBy(items.categoryId)
 
     const currentMap = new Map(
       currentSpent.map((row) => [row.category_id, Number(row.amount || 0)])
-    );
-    const prevMap = new Map(prevSpent.map((row) => [row.category_id, Number(row.amount || 0)]));
+    )
+    const prevMap = new Map(prevSpent.map((row) => [row.category_id, Number(row.amount || 0)]))
 
     const category_comparisons = categories.map((category) => {
-      const currentAmount = currentMap.get(category.id) ?? 0;
-      const prevAmount = prevMap.get(category.id) ?? 0;
-      const changeAmount = currentAmount - prevAmount;
-      const changePercent = prevAmount === 0 ? null : (changeAmount / prevAmount) * 100;
+      const currentAmount = currentMap.get(category.id) ?? 0
+      const prevAmount = prevMap.get(category.id) ?? 0
+      const changeAmount = currentAmount - prevAmount
+      const changePercent = prevAmount === 0 ? null : (changeAmount / prevAmount) * 100
       return {
         category_id: category.id,
         category_label: category.label,
@@ -74,19 +70,19 @@ export async function GET({ cookies }) {
         previous_month_spent: prevAmount,
         change_amount: changeAmount,
         change_percent: changePercent,
-      };
-    });
+      }
+    })
 
     const monthRows = await db
       .select({ id: months.id, year: months.year, month: months.month })
       .from(months)
       .where(eq(months.userId, user.id))
       .orderBy(desc(months.year), desc(months.month))
-      .limit(12);
+      .limit(12)
 
-    const monthIds = monthRows.map((row) => row.id);
-    const incomeByMonth = new Map();
-    const spentByMonth = new Map();
+    const monthIds = monthRows.map((row) => row.id)
+    const incomeByMonth = new Map()
+    const spentByMonth = new Map()
 
     if (monthIds.length > 0) {
       const incomeRows = await db
@@ -96,9 +92,9 @@ export async function GET({ cookies }) {
         })
         .from(incomeEntries)
         .where(inArray(incomeEntries.monthId, monthIds))
-        .groupBy(incomeEntries.monthId);
+        .groupBy(incomeEntries.monthId)
       for (const row of incomeRows) {
-        incomeByMonth.set(row.month_id, Number(row.total_income || 0));
+        incomeByMonth.set(row.month_id, Number(row.total_income || 0))
       }
 
       const spentRows = await db
@@ -108,22 +104,22 @@ export async function GET({ cookies }) {
         })
         .from(items)
         .where(inArray(items.monthId, monthIds))
-        .groupBy(items.monthId);
+        .groupBy(items.monthId)
       for (const row of spentRows) {
-        spentByMonth.set(row.month_id, Number(row.total_spent || 0));
+        spentByMonth.set(row.month_id, Number(row.total_spent || 0))
       }
     }
 
     const fixedRows = await db
       .select({ amount: sql`COALESCE(SUM(${fixedExpenses.amount}), 0)` })
       .from(fixedExpenses)
-      .where(eq(fixedExpenses.userId, user.id));
-    const totalFixed = Number(fixedRows[0]?.amount || 0);
+      .where(eq(fixedExpenses.userId, user.id))
+    const totalFixed = Number(fixedRows[0]?.amount || 0)
 
     const monthly_trends = monthRows.map((row) => {
-      const total_income = incomeByMonth.get(row.id) ?? 0;
-      const total_spent = spentByMonth.get(row.id) ?? 0;
-      const total_fixed = totalFixed;
+      const total_income = incomeByMonth.get(row.id) ?? 0
+      const total_spent = spentByMonth.get(row.id) ?? 0
+      const total_fixed = totalFixed
       return {
         year: row.year,
         month: row.month,
@@ -131,17 +127,17 @@ export async function GET({ cookies }) {
         total_spent,
         total_fixed,
         net: total_income - total_spent - total_fixed,
-      };
-    });
+      }
+    })
 
     const average_monthly_spending =
       monthly_trends.length > 0
         ? monthly_trends.reduce((sum, m) => sum + m.total_spent, 0) / monthly_trends.length
-        : 0;
+        : 0
     const average_monthly_income =
       monthly_trends.length > 0
         ? monthly_trends.reduce((sum, m) => sum + m.total_income, 0) / monthly_trends.length
-        : 0;
+        : 0
 
     return new Response(
       JSON.stringify({
@@ -154,15 +150,15 @@ export async function GET({ cookies }) {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }
-    );
+    )
   } catch (error) {
     if (error.message === 'Unauthorized') {
-      return authResponse();
+      return authResponse()
     }
-    console.error('Get stats error:', error);
+    console.error('Get stats error:', error)
     return new Response(JSON.stringify({ error: 'Failed to get stats' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   }
 }

@@ -5,11 +5,11 @@
    * @prop {Array} options - Array of {value, label} objects
    * @prop {string|number} value - Selected value
    */
-  export let label = '';
-  export let options = [];
-  export let value = '';
+  export let label = ''
+  export let options = []
+  export let value = ''
 
-  let selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
+  let selectId = `select-${Math.random().toString(36).substr(2, 9)}`
 </script>
 
 <div class="flex flex-col gap-1">
