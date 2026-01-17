@@ -5,8 +5,6 @@
   export let months = [];
   export let selectedMonthId = null;
   export let onSelect = () => {};
-  export let onClose = () => {};
-  export let onDownloadPdf = () => {};
 
   const MONTH_NAMES = [
     'Jan',
@@ -39,13 +37,15 @@
 
   function goPrev() {
     if (currentIndex < months.length - 1) {
-      onSelect(months[currentIndex + 1].id);
+      const targetMonth = months[currentIndex + 1];
+      onSelect(targetMonth.id);
     }
   }
 
   function goNext() {
     if (currentIndex > 0) {
-      onSelect(months[currentIndex - 1].id);
+      const targetMonth = months[currentIndex - 1];
+      onSelect(targetMonth.id);
     }
   }
 </script>

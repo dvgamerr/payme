@@ -1,0 +1,32 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import DashboardPage from '../../components/DashboardPage.svelte';
+import { getUserFromSession } from '../../lib/auth.js';
+
+// Check authentication
+const sessionId = Astro.cookies.get('session_id')?.value;
+const user = await getUserFromSession(sessionId);
+
+// Redirect to login if not authenticated
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Get year and month from URL params
+const { year, month } = Astro.params;
+---
+
+<Layout title="Dashboard - PayMe">
+  <DashboardPage client:only="svelte" year={year} month={month} />
+</Layout>
+
+<script>
+  import { theme } from '../../stores/theme.js';
+  import { auth } from '../../stores/auth.js';
+
+  // Initialize theme
+  theme.init();
+
+  // Initialize auth state
+  auth.checkAuth();
+</script>

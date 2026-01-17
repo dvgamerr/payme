@@ -14,6 +14,24 @@
   import ItemsSection from './ItemsSection.svelte';
   import Stats from './Stats.svelte';
 
+  export let year = undefined;
+  export let month = undefined;
+
+  const MONTH_NAMES = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   let savings = 0;
   let showVarianceModal = false;
   let summary = null;
@@ -30,19 +48,7 @@
     try {
       loading = true;
 
-      // Get current month summary (already includes all data)
-      const currentSummary = await api.months.current();
-
-      if (!currentSummary || !currentSummary.month || !currentSummary.month.id) {
-        console.error('Failed to get current month:', currentSummary);
-        return;
-      }
-
-      // Set the summary directly from API response
-      summary = currentSummary;
-      selectedMonthId = currentSummary.month.id;
-
-      // Load all months
+      // Load all months first
       const allMonths = await api.months.list();
       months = allMonths.sort((a, b) => {
         if (a.year !== b.year) return b.year - a.year;
@@ -51,6 +57,31 @@
 
       // Load categories
       categories = await api.categories.list();
+
+      // Determine which month to load
+      let targetMonth = null;
+      if (year && month) {
+        // Find month by year and month name
+        const monthIndex = MONTH_NAMES.findIndex((m) => m.toLowerCase() === month.toLowerCase());
+        if (monthIndex !== -1) {
+          targetMonth = months.find((m) => m.year === parseInt(year) && m.month === monthIndex + 1);
+        }
+      }
+
+      if (!targetMonth) {
+        // Load current month
+        const currentSummary = await api.months.current();
+        if (!currentSummary || !currentSummary.month || !currentSummary.month.id) {
+          console.error('Failed to get current month:', currentSummary);
+          return;
+        }
+        summary = currentSummary;
+        selectedMonthId = currentSummary.month.id;
+      } else {
+        // Load specified month
+        selectedMonthId = targetMonth.id;
+        await loadMonthSummary(targetMonth.id);
+      }
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -99,12 +130,22 @@
       console.error('selectMonth called with invalid id:', id);
       return;
     }
-    selectedMonthId = id;
-    loading = true;
-    try {
-      await loadMonthSummary(id);
-    } finally {
-      loading = false;
+
+    const targetMonth = months.find((m) => m.id === id);
+    if (!targetMonth) return;
+
+    // Check if it's current month
+    const now = new Date();
+    const isCurrentMonth =
+      targetMonth.year === now.getFullYear() && targetMonth.month === now.getMonth() + 1;
+
+    if (isCurrentMonth) {
+      // Navigate to root
+      window.location.href = '/';
+    } else {
+      // Navigate to /year/month
+      const monthName = MONTH_NAMES[targetMonth.month - 1];
+      window.location.href = `/${targetMonth.year}/${monthName}`;
     }
   }
 
@@ -156,13 +197,7 @@
   </Layout>
 {:else}
   <Layout>
-    <MonthNav
-      {months}
-      {selectedMonthId}
-      onSelect={selectMonth}
-      onClose={closeMonth}
-      onDownloadPdf={downloadPdf}
-    />
+    <MonthNav {months} {selectedMonthId} onSelect={selectMonth} />
 
     <div class="space-y-6">
       <Summary

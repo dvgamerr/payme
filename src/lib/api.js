@@ -145,27 +145,6 @@ export const api = {
     get: () => request('/stats'),
   },
 
-  // Export database
-  exportDb: async () => {
-    const response = await fetch(`${BASE_URL}/export`, {
-      credentials: 'include',
-    });
-    return response.blob();
-  },
-
-  // Export data as JSON
-  exportJson: async () => {
-    return request('/export/json');
-  },
-
-  // Import data from JSON
-  importJson: async (data) => {
-    return request('/import/json', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
   // Current savings
   savings: {
     get: () => request('/savings'),
