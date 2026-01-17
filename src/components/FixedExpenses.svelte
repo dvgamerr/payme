@@ -85,8 +85,8 @@
   }
 
   async function handleDelete(id) {
-    await api.fixedExpenses.delete(id)
-    onUpdate()
+    // await api.fixedExpenses.delete(id)
+    // onUpdate()
   }
 
   function startEdit(expense) {
