@@ -39,6 +39,18 @@ export const fixedExpenses = pgTable('fixed_expenses', {
     .references(() => users.id, { onDelete: 'cascade' }),
   label: text('label').notNull(),
   amount: doublePrecision('amount').notNull(),
+  frequency: text('frequency').notNull().default('monthly'), // 'monthly' or 'yearly'
+});
+
+export const userSettings = pgTable('user_settings', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  baseCurrency: text('base_currency').notNull().default('THB'),
+  currencySymbol: text('currency_symbol').notNull().default('฿'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const budgetCategories = pgTable('budget_categories', {

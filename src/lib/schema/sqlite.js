@@ -33,6 +33,20 @@ export const fixedExpenses = sqliteTable('fixed_expenses', {
     .references(() => users.id, { onDelete: 'cascade' }),
   label: text('label').notNull(),
   amount: real('amount').notNull(),
+  frequency: text('frequency').notNull().default('monthly'), // 'monthly' or 'yearly'
+});
+
+export const userSettings = sqliteTable('user_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .unique(),
+  baseCurrency: text('base_currency').notNull().default('THB'),
+  currencySymbol: text('currency_symbol').notNull().default('฿'),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const budgetCategories = sqliteTable('budget_categories', {
