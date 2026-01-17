@@ -1,11 +1,10 @@
 <script>
-  import { Plus, Check, X, Trash2 } from 'lucide-svelte'
+  import { Plus } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import numeral from 'numeral'
   import Card from './ui/Card.svelte'
-  import Input from './ui/Input.svelte'
-  import Toggle from './ui/Toggle.svelte'
+  import FixedExpenseForm from './FixedExpenseForm.svelte'
 
   export let expenses = []
   export let onUpdate = () => {}
@@ -16,7 +15,6 @@
   let amount = ''
   let frequency = 'monthly'
   let currencySymbol = '฿'
-  let amountInput = null
 
   // Subscribe to settings for currency symbol
   $: currencySymbol = $settings.currencySymbol || '฿'
@@ -65,11 +63,11 @@
   }
 
   function startEdit(expense) {
+    isAdding = false
     editingId = expense.id
     label = expense.label
     amount = expense.amount.toString()
     frequency = expense.frequency || 'monthly'
-    setTimeout(() => amountInput?.focus(), 0)
   }
 
   function cancelEdit() {
@@ -102,49 +100,15 @@
       <div class="flex items-center justify-between">
         {#if editingId === expense.id}
           <!-- Editing Mode -->
-          <div class="flex flex-1 items-end gap-2">
-            <div class="flex-1">
-              <Input placeholder="Expense" bind:value={label} />
-            </div>
-            <div class="w-22">
-              <Input
-                type="text"
-                placeholder="Amount"
-                bind:value={amount}
-                bind:this={amountInput}
-                formatAsNumber={true}
-              />
-            </div>
-            <div class="flex items-end">
-              <Toggle
-                bind:value={frequency}
-                options={[
-                  { value: 'monthly', label: 'รายเดือน' },
-                  { value: 'yearly', label: 'รายปี' },
-                ]}
-              />
-            </div>
-            <div class="gap-0">
-              <button
-                on:click={() => handleUpdate(expense.id)}
-                class="cursor-pointer py-1.5 opacity-70 hover:opacity-100"
-              >
-                <Check size={16} />
-              </button>
-              <button
-                on:click={cancelEdit}
-                class="cursor-pointer py-1.5 opacity-70 hover:opacity-100"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <button
-              on:click={() => handleDelete(expense.id)}
-              class="text-destructive p-1.5 opacity-70 hover:opacity-100"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
+          <FixedExpenseForm
+            mode="edit"
+            bind:label
+            bind:amount
+            bind:frequency
+            onSave={() => handleUpdate(expense.id)}
+            onCancel={cancelEdit}
+            onDelete={() => handleDelete(expense.id)}
+          />
         {:else}
           <!-- View Mode -->
           <button
@@ -162,32 +126,14 @@
 
     {#if isAdding}
       <!-- Add New Expense -->
-      <div class="flex items-end gap-2 pt-2">
-        <div class="flex-1">
-          <Input placeholder="Expense" bind:value={label} />
-        </div>
-        <div class="w-22">
-          <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
-        </div>
-        <div class="flex items-end">
-          <Toggle
-            bind:value={frequency}
-            width="w-22"
-            options={[
-              { value: 'monthly', label: 'รายเดือน' },
-              { value: 'yearly', label: 'รายปี' },
-            ]}
-          />
-        </div>
-        <div class="gap-0">
-          <button on:click={handleAdd} class="cursor-pointer py-1.5 opacity-70 hover:opacity-100">
-            <Check size={16} />
-          </button>
-          <button on:click={cancelEdit} class="cursor-pointer py-1.5 opacity-70 hover:opacity-100">
-            <X size={16} />
-          </button>
-        </div>
-      </div>
+      <FixedExpenseForm
+        mode="add"
+        bind:label
+        bind:amount
+        bind:frequency
+        onSave={handleAdd}
+        onCancel={cancelEdit}
+      />
     {/if}
 
     {#if expenses.length === 0 && !isAdding}

@@ -17,6 +17,12 @@
 
   let inputId = `input-${Math.random().toString(36).substr(2, 9)}`
   let displayValue = ''
+  let inputElement = null
+
+  // Export focus method
+  export function focus() {
+    inputElement?.focus()
+  }
 
   /**
    * Format input value as number while typing
@@ -61,8 +67,6 @@
     const parsed = numeral(value).value()
     return parsed ?? 0
   }
-
-  // Initialize display value
   $: {
     if (formatAsNumber && type === 'text') {
       displayValue = value ? formatInputNumber(String(value)) : ''
@@ -114,6 +118,7 @@
     </label>
   {/if}
   <input
+    bind:this={inputElement}
     id={inputId}
     {type}
     {placeholder}
@@ -122,6 +127,7 @@
     on:change
     on:blur={handleBlur}
     on:focus
+    on:keydown
     class="border-border placeholder:text-muted-foreground focus:border-foreground w-full border-b bg-transparent px-0 py-2 text-sm transition-colors focus:outline-none"
     {...$$restProps}
   />
