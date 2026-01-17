@@ -189,7 +189,7 @@
                 </span>
               </td>
               <td class="text-foreground py-3 text-right text-sm font-medium">
-                {currencySymbol}{numeral(item.amount).format('0,0')}
+                {currencySymbol}{numeral(item.amount).format('0,0.00')}
               </td>
               {#if !isReadOnly}
                 <td class="py-2">

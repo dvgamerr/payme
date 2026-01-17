@@ -1,46 +1,35 @@
 <script>
-  import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte'
+  import { Plus, Check, X, Trash2 } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import numeral from 'numeral'
   import Card from './ui/Card.svelte'
   import Input from './ui/Input.svelte'
-  import Select from './ui/Select.svelte'
-  import Button from './ui/Button.svelte'
-  import Modal from './ui/Modal.svelte'
+  import Toggle from './ui/Toggle.svelte'
 
   export let expenses = []
   export let onUpdate = () => {}
 
-  let isManaging = false
   let isAdding = false
   let editingId = null
   let label = ''
   let amount = ''
   let frequency = 'monthly'
   let currencySymbol = '฿'
+  let amountInput = null
 
   // Subscribe to settings for currency symbol
   $: currencySymbol = $settings.currencySymbol || '฿'
 
-  // Reset form when modal closes
-  $: if (!isManaging) {
-    isAdding = false
-    editingId = null
-    label = ''
-    amount = ''
-    frequency = 'monthly'
-  }
-
-  function closeModal() {
-    isManaging = false
-  }
-
-  // Calculate monthly equivalent for total
+  // Calculate total (always in monthly equivalent)
   $: total = expenses.reduce((sum, e) => {
     const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
     return sum + monthlyAmount
   }, 0)
+
+  function getMonthlyAmount(expense) {
+    return expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
+  }
 
   async function handleAdd() {
     if (!label || !amount) return
@@ -80,6 +69,7 @@
     label = expense.label
     amount = expense.amount.toString()
     frequency = expense.frequency || 'monthly'
+    setTimeout(() => amountInput?.focus(), 0)
   }
 
   function cancelEdit() {
@@ -90,65 +80,43 @@
     isAdding = false
   }
 
-  function getDisplayAmount(expense) {
-    if (expense.frequency === 'yearly') {
-      return `${currencySymbol}${numeral(expense.amount).format('0,0')}/ปี (${currencySymbol}${numeral(expense.amount / 12).format('0,0')}/เดือน)`
-    }
-    return `${currencySymbol}${numeral(expense.amount).format('0,0')}/เดือน`
+  function startAdd() {
+    cancelEdit()
+    isAdding = true
   }
 </script>
 
 <Card>
   <div class="mb-4 flex items-center justify-between">
-    <h3 class="text-foreground text-sm font-semibold">Fixed</h3>
+    <h3 class="text-foreground text-sm font-semibold tracking-wide uppercase">Fixed</h3>
     <button
-      on:click={() => (isManaging = true)}
+      on:click={startAdd}
       class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
     >
-      <Settings size={16} />
+      <Plus size={16} />
     </button>
   </div>
 
-  <div class="space-y-0">
+  <div class="min-h-[200px] space-y-0">
     {#each expenses as expense (expense.id)}
-      <div class="border-border flex items-center justify-between border-b py-2.5 last:border-0">
-        <span class="text-foreground text-sm">
-          {expense.label}
-        </span>
-        <span class="text-muted-foreground text-sm">
-          {getDisplayAmount(expense)}
-        </span>
-      </div>
-    {/each}
-    {#if expenses.length === 0}
-      <div class="text-muted-foreground py-6 text-center text-sm">No fixed expenses</div>
-    {/if}
-  </div>
-
-  {#if expenses.length > 0}
-    <div class="border-border mt-4 flex justify-between border-t pt-3">
-      <span class="text-foreground text-sm font-medium"> Total (Monthly) </span>
-      <span class="text-foreground text-sm font-semibold">
-        {currencySymbol}{numeral(total).format('0,0')}
-      </span>
-    </div>
-  {/if}
-</Card>
-
-<Modal bind:isOpen={isManaging} onClose={closeModal} title="Manage Fixed Expenses">
-  <div class="space-y-3">
-    {#each expenses as expense (expense.id)}
-      <div>
+      <div class="flex items-center justify-between">
         {#if editingId === expense.id}
-          <div class="flex items-end gap-2">
+          <!-- Editing Mode -->
+          <div class="flex flex-1 items-end gap-2">
             <div class="flex-1">
-              <Input placeholder="Label" bind:value={label} />
+              <Input placeholder="Expense" bind:value={label} />
             </div>
-            <div class="w-32">
-              <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
+            <div class="w-22">
+              <Input
+                type="text"
+                placeholder="Amount"
+                bind:value={amount}
+                bind:this={amountInput}
+                formatAsNumber={true}
+              />
             </div>
-            <div class="w-28">
-              <Select
+            <div class="flex items-end">
+              <Toggle
                 bind:value={frequency}
                 options={[
                   { value: 'monthly', label: 'รายเดือน' },
@@ -156,72 +124,83 @@
                 ]}
               />
             </div>
+            <div class="gap-0">
+              <button
+                on:click={() => handleUpdate(expense.id)}
+                class="cursor-pointer py-1.5 opacity-70 hover:opacity-100"
+              >
+                <Check size={16} />
+              </button>
+              <button
+                on:click={cancelEdit}
+                class="cursor-pointer py-1.5 opacity-70 hover:opacity-100"
+              >
+                <X size={16} />
+              </button>
+            </div>
             <button
-              on:click={() => handleUpdate(expense.id)}
-              class="p-1.5 opacity-70 hover:opacity-100"
+              on:click={() => handleDelete(expense.id)}
+              class="text-destructive p-1.5 opacity-70 hover:opacity-100"
             >
-              <Check size={16} />
-            </button>
-            <button on:click={cancelEdit} class="p-1.5 opacity-70 hover:opacity-100">
-              <X size={16} />
+              <Trash2 size={16} />
             </button>
           </div>
         {:else}
-          <div
-            class="border-sand-200 dark:border-charcoal-800 flex items-center justify-between border-b py-2"
+          <!-- View Mode -->
+          <button
+            on:click={() => startEdit(expense)}
+            class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors"
           >
-            <span class="text-sm">{expense.label}</span>
-            <div class="flex items-center gap-2">
-              <span class="text-sm">{getDisplayAmount(expense)}</span>
-              <button on:click={() => startEdit(expense)} class="p-1 opacity-70 hover:opacity-100">
-                <Pen size={14} />
-              </button>
-              <button
-                on:click={() => handleDelete(expense.id)}
-                class="text-destructive p-1 opacity-70 hover:opacity-100"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
+            <span>{expense.label}</span>
+            <span class="text-muted-foreground">
+              {currencySymbol}{numeral(getMonthlyAmount(expense)).format('0,0.00')}
+            </span>
+          </button>
         {/if}
       </div>
     {/each}
 
     {#if isAdding}
+      <!-- Add New Expense -->
       <div class="flex items-end gap-2 pt-2">
         <div class="flex-1">
-          <Input placeholder="Label" bind:value={label} />
+          <Input placeholder="Expense" bind:value={label} />
         </div>
-        <div class="w-32">
+        <div class="w-22">
           <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
         </div>
-        <div class="w-28">
-          <Select
+        <div class="flex items-end">
+          <Toggle
             bind:value={frequency}
+            width="w-22"
             options={[
               { value: 'monthly', label: 'รายเดือน' },
               { value: 'yearly', label: 'รายปี' },
             ]}
           />
         </div>
-        <Button size="sm" on:click={handleAdd}>
-          <Check size={16} />
-        </Button>
-        <Button size="sm" variant="ghost" on:click={cancelEdit}>
-          <X size={16} />
-        </Button>
+        <div class="gap-0">
+          <button on:click={handleAdd} class="cursor-pointer py-1.5 opacity-70 hover:opacity-100">
+            <Check size={16} />
+          </button>
+          <button on:click={cancelEdit} class="cursor-pointer py-1.5 opacity-70 hover:opacity-100">
+            <X size={16} />
+          </button>
+        </div>
       </div>
-    {:else}
-      <Button
-        variant="secondary"
-        size="sm"
-        on:click={() => (isAdding = true)}
-        className="w-full mt-2"
-      >
-        <Plus size={16} class="mr-2" />
-        Add Expense
-      </Button>
+    {/if}
+
+    {#if expenses.length === 0 && !isAdding}
+      <div class="text-muted-foreground py-6 text-center text-sm">No fixed expenses</div>
     {/if}
   </div>
-</Modal>
+
+  {#if expenses.length > 0}
+    <div class="border-border mt-4 flex justify-between border-t pt-3">
+      <span class="text-muted-foreground text-xs tracking-wide uppercase"> Total </span>
+      <span class="text-foreground text-sm font-semibold">
+        {currencySymbol}{numeral(total).format('0,0.00')}
+      </span>
+    </div>
+  {/if}
+</Card>

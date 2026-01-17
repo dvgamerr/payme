@@ -43,7 +43,7 @@
             ? 'text-destructive'
             : ''}"
         >
-          {currencySymbol}{numeral(Math.abs(item.value)).format('0,0')}
+          {currencySymbol}{numeral(Math.abs(item.value)).format('0,0.00')}
         </div>
       </div>
     </Card>

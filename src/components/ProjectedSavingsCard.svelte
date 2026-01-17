@@ -19,7 +19,7 @@
   </div>
   <div class="flex items-center justify-between">
     <span class="text-sage-700 dark:text-sage-400 text-sm font-semibold">
-      {currencySymbol}{numeral(projected).format('0,0')}
+      {currencySymbol}{numeral(projected).format('0,0.00')}
     </span>
     {#if onAnalyzeClick}
       <button

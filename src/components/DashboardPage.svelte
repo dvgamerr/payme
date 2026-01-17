@@ -175,15 +175,6 @@
       alert(err.message || 'Failed to close month')
     }
   }
-
-  async function downloadPdf() {
-    // TODO: Implement PDF generation
-    alert('PDF generation will be implemented')
-  }
-
-  function handleSavingsChange(value) {
-    savings = value
-  }
 </script>
 
 {#if loading && !summary}

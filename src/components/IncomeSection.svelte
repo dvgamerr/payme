@@ -108,7 +108,7 @@
             </span>
             <div class="flex items-center gap-2">
               <span class="text-foreground text-sm font-medium">
-                {currencySymbol}{numeral(entry.amount).format('0,0')}
+                {currencySymbol}{numeral(entry.amount).format('0,0.00')}
               </span>
               {#if !isReadOnly}
                 <button

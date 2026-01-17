@@ -31,7 +31,7 @@
 <button
   {type}
   {disabled}
-  class="{baseStyles} {variants[variant]} {sizes[size]}"
+  class="{baseStyles} {variants[variant]} {sizes[size]} cursor-pointer"
   on:click
   {...$$restProps}
 >

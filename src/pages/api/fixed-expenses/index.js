@@ -17,7 +17,6 @@ export async function GET({ cookies }) {
       })
       .from(fixedExpenses)
       .where(eq(fixedExpenses.userId, user.id))
-      .orderBy(asc(fixedExpenses.label))
 
     return new Response(JSON.stringify(expenses), {
       status: 200,

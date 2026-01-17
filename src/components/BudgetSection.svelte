@@ -131,9 +131,9 @@
               </span>
               <div class="flex items-center gap-2">
                 <span class="text-muted-foreground text-xs">
-                  {currencySymbol}{numeral(budget.spent_amount).format('0,0')} / {currencySymbol}{numeral(
+                  {currencySymbol}{numeral(budget.spent_amount).format('0,0.00')} / {currencySymbol}{numeral(
                     budget.allocated_amount
-                  ).format('0,0')}
+                  ).format('0,0.00')}
                 </span>
                 {#if !isReadOnly}
                   <button
@@ -192,7 +192,7 @@
             <span class="text-foreground text-sm">{cat.label}</span>
             <div class="flex items-center gap-2">
               <span class="text-muted-foreground text-xs">
-                {currencySymbol}{numeral(cat.default_amount).format('0,0')} default
+                {currencySymbol}{numeral(cat.default_amount).format('0,0.00')} default
               </span>
               <button
                 on:click={() => startEditCategory(cat)}

@@ -66,7 +66,7 @@
       {:else}
         <div class="flex items-center gap-2">
           <span class="text-sage-700 dark:text-sage-400 text-xl font-semibold">
-            {currencySymbol}{numeral(amount).format('0,0')}
+            {currencySymbol}{numeral(amount).format('0,0.00')}
           </span>
           <button
             on:click={startEdit}
