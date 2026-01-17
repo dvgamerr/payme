@@ -92,7 +92,7 @@
 </script>
 
 <div class="min-h-screen">
-  <header class="border-border bg-background/95 sticky top-0 z-40 border-b backdrop-blur">
+  <header class="bg-background/95 sticky top-0 z-40">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
       <div>
         <h1 class="text-2xl font-bold">Payme</h1>

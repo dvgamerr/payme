@@ -114,11 +114,10 @@
       await loadData();
       return;
     }
-    loading = true;
     try {
       await loadMonthSummary(selectedMonthId);
-    } finally {
-      loading = false;
+    } catch (err) {
+      console.error('Error refreshing data:', err);
     }
   }
 
@@ -175,14 +174,14 @@
 
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <IncomeSection
-          monthId={summary.month.id}
+          monthId={selectedMonthId}
           entries={summary.income_entries}
           isReadOnly={summary.month.is_closed}
           onUpdate={refresh}
         />
         <FixedExpenses expenses={summary.fixed_expenses} onUpdate={refresh} />
         <BudgetSection
-          monthId={summary.month.id}
+          monthId={selectedMonthId}
           budgets={summary.budgets}
           {categories}
           isReadOnly={summary.month.is_closed}
@@ -191,7 +190,7 @@
       </div>
 
       <ItemsSection
-        monthId={summary.month.id}
+        monthId={selectedMonthId}
         items={summary.items}
         {categories}
         isReadOnly={summary.month.is_closed}

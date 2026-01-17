@@ -15,7 +15,10 @@
   let amount = '';
 
   async function handleAdd() {
-    if (!label || !amount) return;
+    if (!label || !amount || !monthId) {
+      console.error('Missing required data:', { label, amount, monthId });
+      return;
+    }
     await api.income.create(monthId, { label, amount: parseFloat(amount) });
     label = '';
     amount = '';
@@ -24,7 +27,10 @@
   }
 
   async function handleUpdate(id) {
-    if (!label || !amount) return;
+    if (!label || !amount || !monthId) {
+      console.error('Missing required data:', { label, amount, monthId, id });
+      return;
+    }
     await api.income.update(monthId, id, { label, amount: parseFloat(amount) });
     editingId = null;
     label = '';
@@ -33,6 +39,10 @@
   }
 
   async function handleDelete(id) {
+    if (!monthId) {
+      console.error('Missing monthId:', monthId);
+      return;
+    }
     await api.income.delete(monthId, id);
     await onUpdate();
   }
