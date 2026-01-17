@@ -14,46 +14,74 @@
   let label = ''
   let amount = ''
   let frequency = 'monthly'
+  let currency = 'THB'
   let currencySymbol = '฿'
 
   // Subscribe to settings for currency symbol
   $: currencySymbol = $settings.currencySymbol || '฿'
+  $: baseCurrency = $settings.baseCurrency || 'THB'
 
-  // Calculate total (always in monthly equivalent)
+  // Calculate total (always in monthly equivalent and base currency)
   $: total = expenses.reduce((sum, e) => {
     const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
-    return sum + monthlyAmount
+    const exchangeRate = e.exchange_rate || 1
+    return sum + monthlyAmount * exchangeRate
   }, 0)
 
   function getMonthlyAmount(expense) {
-    return expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
+    const monthlyAmount = expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
+    const exchangeRate = expense.exchange_rate || 1
+    return monthlyAmount * exchangeRate
+  }
+
+  async function fetchExchangeRate(fromCurrency) {
+    if (fromCurrency === baseCurrency) {
+      return 1
+    }
+    try {
+      const response = await fetch(`/api/exchange-rates?from=${fromCurrency}&to=${baseCurrency}`)
+      if (!response.ok) throw new Error('Failed to fetch exchange rate')
+      const data = await response.json()
+      return data.rate
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error)
+      return 1
+    }
   }
 
   async function handleAdd() {
     if (!label || !amount) return
+    const exchangeRate = await fetchExchangeRate(currency)
     await api.fixedExpenses.create({
       label,
       amount: parseFloat(amount),
       frequency,
+      currency,
+      exchange_rate: exchangeRate,
     })
     label = ''
     amount = ''
     frequency = 'monthly'
+    currency = 'THB'
     isAdding = false
     await onUpdate()
   }
 
   async function handleUpdate(id) {
     if (!label || !amount) return
+    const exchangeRate = await fetchExchangeRate(currency)
     await api.fixedExpenses.update(id, {
       label,
       amount: parseFloat(amount),
       frequency,
+      currency,
+      exchange_rate: exchangeRate,
     })
     editingId = null
     label = ''
     amount = ''
     frequency = 'monthly'
+    currency = 'THB'
     await onUpdate()
   }
 
@@ -68,6 +96,7 @@
     label = expense.label
     amount = expense.amount.toString()
     frequency = expense.frequency || 'monthly'
+    currency = expense.currency || 'THB'
   }
 
   function cancelEdit() {
@@ -75,6 +104,7 @@
     label = ''
     amount = ''
     frequency = 'monthly'
+    currency = 'THB'
     isAdding = false
   }
 
@@ -105,6 +135,7 @@
             bind:label
             bind:amount
             bind:frequency
+            bind:currency
             onSave={() => handleUpdate(expense.id)}
             onCancel={cancelEdit}
             onDelete={() => handleDelete(expense.id)}
@@ -115,7 +146,12 @@
             on:click={() => startEdit(expense)}
             class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors"
           >
-            <span>{expense.label}</span>
+            <span>
+              {expense.label}
+              {#if expense.currency && expense.currency !== baseCurrency}
+                <span class="text-muted-foreground ml-2 text-xs">({expense.currency})</span>
+              {/if}
+            </span>
             <span class="text-muted-foreground">
               {currencySymbol}{numeral(getMonthlyAmount(expense)).format('0,0.00')}
             </span>
@@ -131,6 +167,7 @@
         bind:label
         bind:amount
         bind:frequency
+        bind:currency
         onSave={handleAdd}
         onCancel={cancelEdit}
       />

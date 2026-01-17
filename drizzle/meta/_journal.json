@@ -15,6 +15,13 @@
       "when": 1768635676295,
       "tag": "0001_lovely_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1768651736453,
+      "tag": "0002_smart_slyde",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,8 @@ export async function GET({ cookies }) {
         label: fixedExpenses.label,
         amount: fixedExpenses.amount,
         frequency: fixedExpenses.frequency,
+        currency: fixedExpenses.currency,
+        exchange_rate: fixedExpenses.exchangeRate,
       })
       .from(fixedExpenses)
       .where(eq(fixedExpenses.userId, user.id))
@@ -38,7 +40,7 @@ export async function POST({ request, cookies }) {
   try {
     const user = await requireAuth(cookies)
     const body = await request.json()
-    const { label, amount, frequency = 'monthly' } = body
+    const { label, amount, frequency = 'monthly', currency = 'THB', exchange_rate = 1 } = body
 
     if (!label || amount === undefined) {
       return new Response(JSON.stringify({ error: 'Label and amount required' }), {
@@ -49,7 +51,7 @@ export async function POST({ request, cookies }) {
 
     const rows = await db
       .insert(fixedExpenses)
-      .values({ userId: user.id, label, amount, frequency })
+      .values({ userId: user.id, label, amount, frequency, currency, exchangeRate: exchange_rate })
       .returning({ id: fixedExpenses.id })
 
     const expense = {
@@ -58,6 +60,8 @@ export async function POST({ request, cookies }) {
       label,
       amount,
       frequency,
+      currency,
+      exchange_rate,
     }
 
     return new Response(JSON.stringify(expense), {

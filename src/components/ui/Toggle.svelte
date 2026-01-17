@@ -23,8 +23,7 @@
 <button
   type="button"
   on:click={toggle}
-  class="border-border hover:bg-muted hover:border-accent text-muted-foreground hover:text-foreground {width} flex cursor-pointer items-center justify-between gap-1 rounded-xs border px-2 py-1 text-sm transition-colors"
+  class="hover:bg-muted hover:border-accent text-muted-foreground hover:text-foreground {width} flex cursor-pointer items-center justify-between gap-1 rounded-xs px-2 py-1 text-sm transition-colors"
 >
-  <ChevronRight size={12} class="opacity-50" />
   <span>{selectedLabel}</span>
 </button>

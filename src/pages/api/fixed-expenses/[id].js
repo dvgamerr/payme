@@ -9,7 +9,7 @@ export async function PUT({ params, request, cookies }) {
     const user = await requireAuth(cookies)
     const id = parseInt(params.id)
     const body = await request.json()
-    const { label, amount, frequency } = body
+    const { label, amount, frequency, currency, exchange_rate } = body
 
     const checkRows = await db
       .select({ user_id: fixedExpenses.userId })
@@ -36,6 +36,12 @@ export async function PUT({ params, request, cookies }) {
     if (frequency !== undefined) {
       updates.frequency = frequency
     }
+    if (currency !== undefined) {
+      updates.currency = currency
+    }
+    if (exchange_rate !== undefined) {
+      updates.exchangeRate = exchange_rate
+    }
 
     if (Object.keys(updates).length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), {
@@ -53,6 +59,8 @@ export async function PUT({ params, request, cookies }) {
         label: fixedExpenses.label,
         amount: fixedExpenses.amount,
         frequency: fixedExpenses.frequency,
+        currency: fixedExpenses.currency,
+        exchange_rate: fixedExpenses.exchangeRate,
       })
       .from(fixedExpenses)
       .where(eq(fixedExpenses.id, id))
