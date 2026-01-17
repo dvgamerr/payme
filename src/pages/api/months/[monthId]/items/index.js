@@ -1,28 +1,22 @@
 import { desc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../../lib/middleware.js'
+import { requireAuth } from '../../../../../lib/middleware.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  validateRequired,
+  parseIntParam,
+} from '../../../../../lib/api-utils.js'
+import { getMonthByIdForUser, getCategoryByIdForUser } from '../../../../../lib/db-helpers.js'
 
-const { budgetCategories, items, months } = schema
+const { budgetCategories, items } = schema
 
-export async function GET({ params, cookies }) {
-  try {
+export const GET = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
 
-    // Verify month belongs to user
-    const monthRows = await db
-      .select({ user_id: months.userId })
-      .from(months)
-      .where(eq(months.id, monthId))
-      .limit(1)
-    const month = monthRows[0]
-
-    if (!month || month.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await getMonthByIdForUser(monthId, user.id)
 
     const itemsRows = await db
       .select({
@@ -39,68 +33,21 @@ export async function GET({ params, cookies }) {
       .where(eq(items.monthId, monthId))
       .orderBy(desc(items.spentOn), desc(items.id))
 
-    return new Response(JSON.stringify(itemsRows), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List items error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list items' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(itemsRows)
+  })
 }
 
-export async function POST({ params, request, cookies }) {
-  try {
+export const POST = async ({ params, request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
     const body = await request.json()
     const { category_id, description, amount, spent_on } = body
 
-    if (!category_id || !description || amount === undefined || !spent_on) {
-      return new Response(
-        JSON.stringify({ error: 'category_id, description, amount, and spent_on required' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
-    }
+    validateRequired(body, ['category_id', 'description', 'amount', 'spent_on'])
 
-    // Verify month belongs to user
-    const monthRows = await db
-      .select({ user_id: months.userId })
-      .from(months)
-      .where(eq(months.id, monthId))
-      .limit(1)
-    const month = monthRows[0]
-
-    if (!month || month.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Verify category belongs to user
-    const categoryRows = await db
-      .select({ user_id: budgetCategories.userId })
-      .from(budgetCategories)
-      .where(eq(budgetCategories.id, category_id))
-      .limit(1)
-    const category = categoryRows[0]
-
-    if (!category || category.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Category not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await getMonthByIdForUser(monthId, user.id)
+    await getCategoryByIdForUser(category_id, user.id)
 
     const rows = await db
       .insert(items)
@@ -122,18 +69,6 @@ export async function POST({ params, request, cookies }) {
       spent_on,
     }
 
-    return new Response(JSON.stringify(item), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Create item error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to create item' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(item, 201)
+  })
 }

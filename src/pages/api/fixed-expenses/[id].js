@@ -1,53 +1,29 @@
 import { eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess, jsonError, parseIntParam } from '../../../lib/api-utils.js'
+import { verifyResourceOwnership } from '../../../lib/db-helpers.js'
 
 const { fixedExpenses } = schema
 
-export async function PUT({ params, request, cookies }) {
-  try {
+export const PUT = async ({ params, request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const id = parseInt(params.id)
+    const id = parseIntParam(params.id, 'fixed expense ID')
     const body = await request.json()
     const { label, amount, frequency, currency, exchange_rate } = body
 
-    const checkRows = await db
-      .select({ user_id: fixedExpenses.userId })
-      .from(fixedExpenses)
-      .where(eq(fixedExpenses.id, id))
-      .limit(1)
-    const expense = checkRows[0]
-
-    if (!expense || expense.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Fixed expense not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await verifyResourceOwnership(fixedExpenses, id, user.id, 'Fixed expense')
 
     const updates = {}
-
-    if (label !== undefined) {
-      updates.label = label
-    }
-    if (amount !== undefined) {
-      updates.amount = amount
-    }
-    if (frequency !== undefined) {
-      updates.frequency = frequency
-    }
-    if (currency !== undefined) {
-      updates.currency = currency
-    }
-    if (exchange_rate !== undefined) {
-      updates.exchangeRate = exchange_rate
-    }
+    if (label !== undefined) updates.label = label
+    if (amount !== undefined) updates.amount = amount
+    if (frequency !== undefined) updates.frequency = frequency
+    if (currency !== undefined) updates.currency = currency
+    if (exchange_rate !== undefined) updates.exchangeRate = exchange_rate
 
     if (Object.keys(updates).length === 0) {
-      return new Response(JSON.stringify({ error: 'No fields to update' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return jsonError('No fields to update', 400)
     }
 
     await db.update(fixedExpenses).set(updates).where(eq(fixedExpenses.id, id))
@@ -65,54 +41,20 @@ export async function PUT({ params, request, cookies }) {
       .from(fixedExpenses)
       .where(eq(fixedExpenses.id, id))
       .limit(1)
-    const updated = resultRows[0]
 
-    return new Response(JSON.stringify(updated), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Update fixed expense error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to update fixed expense' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(resultRows[0])
+  })
 }
 
-export async function DELETE({ params, cookies }) {
-  try {
+export const DELETE = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const id = parseInt(params.id)
+    const id = parseIntParam(params.id, 'fixed expense ID')
 
-    const checkRows = await db
-      .select({ user_id: fixedExpenses.userId })
-      .from(fixedExpenses)
-      .where(eq(fixedExpenses.id, id))
-      .limit(1)
-    const expense = checkRows[0]
-
-    if (!expense || expense.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Fixed expense not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await verifyResourceOwnership(fixedExpenses, id, user.id, 'Fixed expense')
 
     await db.delete(fixedExpenses).where(eq(fixedExpenses.id, id))
 
     return new Response(null, { status: 204 })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Delete fixed expense error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to delete fixed expense' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  })
 }

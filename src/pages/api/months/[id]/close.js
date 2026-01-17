@@ -1,15 +1,20 @@
 import { and, eq } from 'drizzle-orm'
 import { db, nowSql, schema } from '../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../lib/middleware.js'
+import { requireAuth } from '../../../../lib/middleware.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  jsonError,
+  parseIntParam,
+} from '../../../../lib/api-utils.js'
 
 const { months } = schema
 
-export async function POST({ params, cookies }) {
-  try {
+export const POST = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const id = parseInt(params.id)
+    const id = parseIntParam(params.id, 'month ID')
 
-    // Verify month belongs to user
     const monthRows = await db
       .select({
         id: months.id,
@@ -25,20 +30,13 @@ export async function POST({ params, cookies }) {
     const month = monthRows[0]
 
     if (!month) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      throw new Error('Month not found')
     }
 
     if (month.is_closed) {
-      return new Response(JSON.stringify({ error: 'Month already closed' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return jsonError('Month already closed', 400)
     }
 
-    // Check if it's the last day of the month
     const now = new Date()
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
     const currentDay = now.getDate()
@@ -50,21 +48,11 @@ export async function POST({ params, cookies }) {
       month.month !== currentMonth ||
       currentDay !== lastDayOfMonth
     ) {
-      return new Response(
-        JSON.stringify({
-          error: 'Can only close month on the last day of the current calendar month',
-        }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
+      return jsonError('Can only close month on the last day of the current calendar month', 400)
     }
 
-    // Close the month
     await db.update(months).set({ isClosed: true, closedAt: nowSql }).where(eq(months.id, id))
 
-    // Get updated month
     const updatedRows = await db
       .select({
         id: months.id,
@@ -77,21 +65,8 @@ export async function POST({ params, cookies }) {
       .from(months)
       .where(and(eq(months.id, id), eq(months.userId, user.id)))
       .limit(1)
-    const updatedMonth = updatedRows[0]
-    updatedMonth.is_closed = Boolean(updatedMonth.is_closed)
+    const updatedMonth = { ...updatedRows[0], is_closed: Boolean(updatedRows[0].is_closed) }
 
-    return new Response(JSON.stringify(updatedMonth), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Close month error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to close month' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(updatedMonth)
+  })
 }

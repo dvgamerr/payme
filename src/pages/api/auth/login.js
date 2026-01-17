@@ -1,39 +1,29 @@
 import { loginUser, createSession } from '../../../lib/auth.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  jsonError,
+  validateRequired,
+  setSessionCookie,
+} from '../../../lib/api-utils.js'
 
-export async function POST({ request, cookies }) {
-  try {
+export const POST = async ({ request, cookies }) => {
+  return handleApiRequest(async () => {
     const body = await request.json()
     const { username, password } = body
 
-    if (!username || !password) {
-      return new Response(JSON.stringify({ error: 'Username and password required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+    validateRequired(body, ['username', 'password'])
+
+    try {
+      const user = await loginUser(username, password)
+      const { sessionId, expiresAt } = await createSession(user.id)
+
+      setSessionCookie(cookies, sessionId, expiresAt)
+
+      return jsonSuccess({ id: user.id, username: user.username })
+    } catch (error) {
+      console.error('Login error:', error)
+      return jsonError('Invalid credentials', 401)
     }
-
-    const user = await loginUser(username, password)
-    const { sessionId, expiresAt } = await createSession(user.id)
-
-    // Set session cookie
-    cookies.set('session_id', sessionId, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      expires: new Date(expiresAt),
-    })
-
-    return new Response(JSON.stringify({ id: user.id, username: user.username }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    console.error('Login error:', error)
-
-    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  })
 }

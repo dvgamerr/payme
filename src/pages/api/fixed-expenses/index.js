@@ -1,11 +1,13 @@
 import { asc, desc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess, validateRequired } from '../../../lib/api-utils.js'
+import { getNextDisplayOrder } from '../../../lib/db-helpers.js'
 
 const { fixedExpenses } = schema
 
-export async function GET({ cookies }) {
-  try {
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const expenses = await db
       .select({
@@ -22,43 +24,19 @@ export async function GET({ cookies }) {
       .where(eq(fixedExpenses.userId, user.id))
       .orderBy(asc(fixedExpenses.displayOrder))
 
-    return new Response(JSON.stringify(expenses), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List fixed expenses error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list fixed expenses' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(expenses)
+  })
 }
 
-export async function POST({ request, cookies }) {
-  try {
+export const POST = async ({ request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const body = await request.json()
     const { label, amount, frequency = 'monthly', currency = 'THB', exchange_rate = 1 } = body
 
-    if (!label || amount === undefined) {
-      return new Response(JSON.stringify({ error: 'Label and amount required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    validateRequired(body, ['label', 'amount'])
 
-    const maxOrder = await db
-      .select({ maxOrder: fixedExpenses.displayOrder })
-      .from(fixedExpenses)
-      .where(eq(fixedExpenses.userId, user.id))
-      .orderBy(desc(fixedExpenses.displayOrder))
-      .limit(1)
-
-    const displayOrder = maxOrder[0]?.maxOrder ? maxOrder[0].maxOrder + 1 : 0
+    const displayOrder = await getNextDisplayOrder(fixedExpenses, user.id)
 
     const rows = await db
       .insert(fixedExpenses)
@@ -84,18 +62,6 @@ export async function POST({ request, cookies }) {
       display_order: displayOrder,
     }
 
-    return new Response(JSON.stringify(expense), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Create fixed expense error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to create fixed expense' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(expense, 201)
+  })
 }

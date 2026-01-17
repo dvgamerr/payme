@@ -1,10 +1,11 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess } from '../../../lib/api-utils.js'
 
 const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema
 
-async function getMonthSummary(monthId, userId) {
+const getMonthSummary = async (monthId, userId) => {
   const monthRows = await db
     .select({
       id: months.id,
@@ -114,8 +115,8 @@ async function getMonthSummary(monthId, userId) {
   }
 }
 
-export async function GET({ cookies }) {
-  try {
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const now = new Date()
     const year = now.getFullYear()
@@ -153,18 +154,6 @@ export async function GET({ cookies }) {
 
     const summary = await getMonthSummary(result.id, user.id)
 
-    return new Response(JSON.stringify(summary), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Get current month error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to get current month' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(summary)
+  })
 }

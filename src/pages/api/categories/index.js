@@ -1,11 +1,12 @@
 import { asc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess, validateRequired } from '../../../lib/api-utils.js'
 
 const { budgetCategories } = schema
 
-export async function GET({ cookies }) {
-  try {
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const categories = await db
       .select({
@@ -18,34 +19,17 @@ export async function GET({ cookies }) {
       .where(eq(budgetCategories.userId, user.id))
       .orderBy(asc(budgetCategories.label))
 
-    return new Response(JSON.stringify(categories), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List categories error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list categories' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(categories)
+  })
 }
 
-export async function POST({ request, cookies }) {
-  try {
+export const POST = async ({ request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const body = await request.json()
     const { label, default_amount } = body
 
-    if (!label || default_amount === undefined) {
-      return new Response(JSON.stringify({ error: 'Label and default_amount required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    validateRequired(body, ['label', 'default_amount'])
 
     const rows = await db
       .insert(budgetCategories)
@@ -59,18 +43,6 @@ export async function POST({ request, cookies }) {
       default_amount,
     }
 
-    return new Response(JSON.stringify(category), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Create category error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to create category' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(category, 201)
+  })
 }

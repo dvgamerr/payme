@@ -1,11 +1,12 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess } from '../../../lib/api-utils.js'
 
 const { budgetCategories, fixedExpenses, incomeEntries, items, months } = schema
 
-export async function GET({ cookies }) {
-  try {
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
 
     const now = new Date()
@@ -147,26 +148,11 @@ export async function GET({ cookies }) {
         ? monthly_trends.reduce((sum, m) => sum + m.total_income, 0) / monthly_trends.length
         : 0
 
-    return new Response(
-      JSON.stringify({
-        category_comparisons,
-        monthly_trends,
-        average_monthly_spending,
-        average_monthly_income,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    )
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Get stats error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to get stats' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+    return jsonSuccess({
+      category_comparisons,
+      monthly_trends,
+      average_monthly_spending,
+      average_monthly_income,
     })
-  }
+  })
 }

@@ -1,11 +1,12 @@
 import { desc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess } from '../../../lib/api-utils.js'
 
 const { months } = schema
 
-export async function GET({ cookies }) {
-  try {
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
     const rows = await db
       .select({
@@ -25,18 +26,6 @@ export async function GET({ cookies }) {
       is_closed: Boolean(m.is_closed),
     }))
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List months error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list months' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(result)
+  })
 }

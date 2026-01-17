@@ -1,30 +1,22 @@
-export async function GET({ locals, url }) {
-  const userId = locals.user?.id
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+import { handleApiRequest, jsonSuccess, jsonError } from '../../../lib/api-utils.js'
 
-  try {
+export const GET = async ({ locals, url }) => {
+  return handleApiRequest(async () => {
+    const userId = locals.user?.id
+    if (!userId) {
+      return jsonError('Unauthorized', 401)
+    }
+
     const from = url.searchParams.get('from') || 'USD'
     const to = url.searchParams.get('to') || 'THB'
 
-    // If same currency, return rate 1
     if (from === to) {
-      return new Response(
-        JSON.stringify({
-          from,
-          to,
-          rate: 1,
-          timestamp: new Date().toISOString(),
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      )
+      return jsonSuccess({
+        from,
+        to,
+        rate: 1,
+        timestamp: new Date().toISOString(),
+      })
     }
 
     const pair = `${from}${to}=X`
@@ -43,23 +35,11 @@ export async function GET({ locals, url }) {
       throw new Error('Exchange rate not found')
     }
 
-    return new Response(
-      JSON.stringify({
-        from,
-        to,
-        rate,
-        timestamp: new Date().toISOString(),
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    )
-  } catch (error) {
-    console.error('Error fetching exchange rate:', error)
-    return new Response(JSON.stringify({ error: 'Failed to fetch exchange rate' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+    return jsonSuccess({
+      from,
+      to,
+      rate,
+      timestamp: new Date().toISOString(),
     })
-  }
+  })
 }

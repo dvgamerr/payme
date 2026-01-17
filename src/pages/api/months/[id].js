@@ -1,10 +1,11 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../lib/middleware.js'
+import { requireAuth } from '../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess, jsonError, parseIntParam } from '../../../lib/api-utils.js'
 
 const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema
 
-async function getMonthSummary(monthId, userId) {
+const getMonthSummary = async (monthId, userId) => {
   const monthRows = await db
     .select({
       id: months.id,
@@ -113,32 +114,17 @@ async function getMonthSummary(monthId, userId) {
   }
 }
 
-export async function GET({ params, cookies }) {
-  try {
+export const GET = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.id)
+    const monthId = parseIntParam(params.id, 'month ID')
 
     const summary = await getMonthSummary(monthId, user.id)
 
     if (!summary) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return jsonError('Month not found', 404)
     }
 
-    return new Response(JSON.stringify(summary), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Get month error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to get month' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(summary)
+  })
 }

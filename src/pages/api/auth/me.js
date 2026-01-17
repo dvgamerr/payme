@@ -1,18 +1,15 @@
 import { getUserFromSession } from '../../../lib/auth.js'
+import { handleApiRequest, jsonSuccess, jsonError } from '../../../lib/api-utils.js'
 
-export async function GET({ cookies }) {
-  const sessionId = cookies.get('session_id')?.value
-  const user = await getUserFromSession(sessionId)
+export const GET = async ({ cookies }) => {
+  return handleApiRequest(async () => {
+    const sessionId = cookies.get('session_id')?.value
+    const user = await getUserFromSession(sessionId)
 
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Not authenticated' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    if (!user) {
+      return jsonError('Not authenticated', 401)
+    }
 
-  return new Response(JSON.stringify({ id: user.id, username: user.username }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
+    return jsonSuccess({ id: user.id, username: user.username })
   })
 }

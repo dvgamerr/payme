@@ -1,53 +1,50 @@
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../../lib/middleware.js'
+import { requireAuth } from '../../../../../lib/middleware.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  jsonError,
+  parseIntParam,
+} from '../../../../../lib/api-utils.js'
 
 const { incomeEntries, months } = schema
 
-export async function PUT({ params, request, cookies }) {
-  try {
+const verifyIncomeOwnership = async (incomeId, monthId, userId) => {
+  const checkRows = await db
+    .select({ id: incomeEntries.id })
+    .from(incomeEntries)
+    .innerJoin(months, eq(months.id, incomeEntries.monthId))
+    .where(
+      and(
+        eq(incomeEntries.id, incomeId),
+        eq(incomeEntries.monthId, monthId),
+        eq(months.userId, userId)
+      )
+    )
+    .limit(1)
+
+  if (!checkRows[0]) {
+    throw new Error('Income not found')
+  }
+}
+
+export const PUT = async ({ params, request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
-    const id = parseInt(params.id)
+    const monthId = parseIntParam(params.monthId, 'month ID')
+    const id = parseIntParam(params.id, 'income ID')
     const body = await request.json()
     const { label, amount } = body
 
-    // Verify income belongs to user's month
-    const checkRows = await db
-      .select({ id: incomeEntries.id })
-      .from(incomeEntries)
-      .innerJoin(months, eq(months.id, incomeEntries.monthId))
-      .where(
-        and(
-          eq(incomeEntries.id, id),
-          eq(incomeEntries.monthId, monthId),
-          eq(months.userId, user.id)
-        )
-      )
-      .limit(1)
-    const income = checkRows[0]
-
-    if (!income) {
-      return new Response(JSON.stringify({ error: 'Income not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await verifyIncomeOwnership(id, monthId, user.id)
 
     const updates = {}
-
-    if (label !== undefined) {
-      updates.label = label
-    }
-    if (amount !== undefined) {
-      updates.amount = amount
-    }
+    if (label !== undefined) updates.label = label
+    if (amount !== undefined) updates.amount = amount
 
     if (Object.keys(updates).length === 0) {
-      return new Response(JSON.stringify({ error: 'No fields to update' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return jsonError('No fields to update', 400)
     }
 
     await db.update(incomeEntries).set(updates).where(eq(incomeEntries.id, id))
@@ -62,62 +59,21 @@ export async function PUT({ params, request, cookies }) {
       .from(incomeEntries)
       .where(eq(incomeEntries.id, id))
       .limit(1)
-    const updated = resultRows[0]
 
-    return new Response(JSON.stringify(updated), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Update income error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to update income' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(resultRows[0])
+  })
 }
 
-export async function DELETE({ params, cookies }) {
-  try {
+export const DELETE = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
-    const id = parseInt(params.id)
+    const monthId = parseIntParam(params.monthId, 'month ID')
+    const id = parseIntParam(params.id, 'income ID')
 
-    const checkRows = await db
-      .select({ id: incomeEntries.id })
-      .from(incomeEntries)
-      .innerJoin(months, eq(months.id, incomeEntries.monthId))
-      .where(
-        and(
-          eq(incomeEntries.id, id),
-          eq(incomeEntries.monthId, monthId),
-          eq(months.userId, user.id)
-        )
-      )
-      .limit(1)
-    const income = checkRows[0]
-
-    if (!income) {
-      return new Response(JSON.stringify({ error: 'Income not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await verifyIncomeOwnership(id, monthId, user.id)
 
     await db.delete(incomeEntries).where(eq(incomeEntries.id, id))
 
     return new Response(null, { status: 204 })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Delete income error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to delete income' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+  })
 }

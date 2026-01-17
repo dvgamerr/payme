@@ -1,28 +1,22 @@
 import { asc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../../lib/middleware.js'
+import { requireAuth } from '../../../../../lib/middleware.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  validateRequired,
+  parseIntParam,
+} from '../../../../../lib/api-utils.js'
+import { getMonthByIdForUser } from '../../../../../lib/db-helpers.js'
 
-const { incomeEntries, months } = schema
+const { incomeEntries } = schema
 
-export async function GET({ params, cookies }) {
-  try {
+export const GET = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
 
-    // Verify month belongs to user
-    const monthRows = await db
-      .select({ user_id: months.userId })
-      .from(months)
-      .where(eq(months.id, monthId))
-      .limit(1)
-    const month = monthRows[0]
-
-    if (!month || month.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await getMonthByIdForUser(monthId, user.id)
 
     const entries = await db
       .select({
@@ -35,50 +29,20 @@ export async function GET({ params, cookies }) {
       .where(eq(incomeEntries.monthId, monthId))
       .orderBy(asc(incomeEntries.id))
 
-    return new Response(JSON.stringify(entries), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List income error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list income' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(entries)
+  })
 }
 
-export async function POST({ params, request, cookies }) {
-  try {
+export const POST = async ({ params, request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
     const body = await request.json()
     const { label, amount } = body
 
-    if (!label || amount === undefined) {
-      return new Response(JSON.stringify({ error: 'Label and amount required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    validateRequired(body, ['label', 'amount'])
 
-    // Verify month belongs to user
-    const monthRows = await db
-      .select({ user_id: months.userId })
-      .from(months)
-      .where(eq(months.id, monthId))
-      .limit(1)
-    const month = monthRows[0]
-
-    if (!month || month.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await getMonthByIdForUser(monthId, user.id)
 
     const rows = await db
       .insert(incomeEntries)
@@ -92,18 +56,6 @@ export async function POST({ params, request, cookies }) {
       amount,
     }
 
-    return new Response(JSON.stringify(entry), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Create income error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to create income' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(entry, 201)
+  })
 }

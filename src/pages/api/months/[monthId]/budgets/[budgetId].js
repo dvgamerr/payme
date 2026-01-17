@@ -1,45 +1,45 @@
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../../lib/middleware.js'
+import { requireAuth } from '../../../../../lib/middleware.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  validateRequired,
+  parseIntParam,
+} from '../../../../../lib/api-utils.js'
 
 const { monthlyBudgets, months } = schema
 
-export async function PUT({ params, request, cookies }) {
-  try {
+const verifyBudgetOwnership = async (budgetId, monthId, userId) => {
+  const checkRows = await db
+    .select({ id: monthlyBudgets.id })
+    .from(monthlyBudgets)
+    .innerJoin(months, eq(months.id, monthlyBudgets.monthId))
+    .where(
+      and(
+        eq(monthlyBudgets.id, budgetId),
+        eq(monthlyBudgets.monthId, monthId),
+        eq(months.userId, userId)
+      )
+    )
+    .limit(1)
+
+  if (!checkRows[0]) {
+    throw new Error('Budget not found')
+  }
+}
+
+export const PUT = async ({ params, request, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
-    const budgetId = parseInt(params.budgetId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
+    const budgetId = parseIntParam(params.budgetId, 'budget ID')
     const body = await request.json()
     const { allocated_amount } = body
 
-    if (allocated_amount === undefined) {
-      return new Response(JSON.stringify({ error: 'allocated_amount required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    validateRequired(body, ['allocated_amount'])
 
-    // Verify budget belongs to user's month
-    const checkRows = await db
-      .select({ id: monthlyBudgets.id })
-      .from(monthlyBudgets)
-      .innerJoin(months, eq(months.id, monthlyBudgets.monthId))
-      .where(
-        and(
-          eq(monthlyBudgets.id, budgetId),
-          eq(monthlyBudgets.monthId, monthId),
-          eq(months.userId, user.id)
-        )
-      )
-      .limit(1)
-    const budget = checkRows[0]
-
-    if (!budget) {
-      return new Response(JSON.stringify({ error: 'Budget not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await verifyBudgetOwnership(budgetId, monthId, user.id)
 
     await db
       .update(monthlyBudgets)
@@ -56,20 +56,7 @@ export async function PUT({ params, request, cookies }) {
       .from(monthlyBudgets)
       .where(eq(monthlyBudgets.id, budgetId))
       .limit(1)
-    const updated = resultRows[0]
 
-    return new Response(JSON.stringify(updated), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('Update budget error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to update budget' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(resultRows[0])
+  })
 }

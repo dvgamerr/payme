@@ -1,28 +1,17 @@
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
-import { requireAuth, authResponse } from '../../../../../lib/middleware.js'
+import { requireAuth } from '../../../../../lib/middleware.js'
+import { handleApiRequest, jsonSuccess, parseIntParam } from '../../../../../lib/api-utils.js'
+import { getMonthByIdForUser } from '../../../../../lib/db-helpers.js'
 
-const { budgetCategories, items, monthlyBudgets, months } = schema
+const { budgetCategories, items, monthlyBudgets } = schema
 
-export async function GET({ params, cookies }) {
-  try {
+export const GET = async ({ params, cookies }) => {
+  return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const monthId = parseInt(params.monthId)
+    const monthId = parseIntParam(params.monthId, 'month ID')
 
-    // Verify month belongs to user
-    const monthRows = await db
-      .select({ user_id: months.userId })
-      .from(months)
-      .where(eq(months.id, monthId))
-      .limit(1)
-    const month = monthRows[0]
-
-    if (!month || month.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Month not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    await getMonthByIdForUser(monthId, user.id)
 
     const budgets = await db
       .select({
@@ -52,18 +41,6 @@ export async function GET({ params, cookies }) {
       )
       .orderBy(asc(budgetCategories.label))
 
-    return new Response(JSON.stringify(budgets), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    if (error.message === 'Unauthorized') {
-      return authResponse()
-    }
-    console.error('List budgets error:', error)
-    return new Response(JSON.stringify({ error: 'Failed to list budgets' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess(budgets)
+  })
 }

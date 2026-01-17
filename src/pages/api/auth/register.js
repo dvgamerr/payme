@@ -1,53 +1,28 @@
 import { registerUser, createSession } from '../../../lib/auth.js'
+import {
+  handleApiRequest,
+  jsonSuccess,
+  jsonError,
+  validateRequired,
+  setSessionCookie,
+} from '../../../lib/api-utils.js'
 
-export async function POST({ request, cookies }) {
-  try {
+export const POST = async ({ request, cookies }) => {
+  return handleApiRequest(async () => {
     const body = await request.json()
     const { username, password } = body
 
-    if (!username || !password) {
-      return new Response(JSON.stringify({ error: 'Username and password required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
+    validateRequired(body, ['username', 'password'])
 
     if (password.length < 6) {
-      return new Response(JSON.stringify({ error: 'Password must be at least 6 characters' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return jsonError('Password must be at least 6 characters', 400)
     }
 
     const user = await registerUser(username, password)
     const { sessionId, expiresAt } = await createSession(user.id)
 
-    // Set session cookie
-    cookies.set('session_id', sessionId, {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      expires: new Date(expiresAt),
-    })
+    setSessionCookie(cookies, sessionId, expiresAt)
 
-    return new Response(JSON.stringify({ id: user.id, username: user.username }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  } catch (error) {
-    console.error('Register error:', error)
-
-    if (error.message === 'Username already exists') {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 409,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    return new Response(JSON.stringify({ error: 'Registration failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
+    return jsonSuccess({ id: user.id, username: user.username }, 201)
+  })
 }
