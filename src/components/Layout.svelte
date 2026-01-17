@@ -3,6 +3,9 @@
   import { onMount } from 'svelte'
   import { theme } from '../stores/theme.js'
   import { auth } from '../stores/auth.js'
+  import SettingsModal from './SettingsModal.svelte'
+
+  let isSettingsOpen = false
 
   // Initialize theme on mount
   onMount(() => {
@@ -11,6 +14,14 @@
 
   $: isDark = $theme
   $: user = $auth.user
+
+  const openSettings = () => {
+    isSettingsOpen = true
+  }
+
+  const closeSettings = () => {
+    isSettingsOpen = false
+  }
 </script>
 
 <div class="min-h-screen">
@@ -18,7 +29,9 @@
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
       <div>
         <h1 class="text-2xl font-bold">Payme</h1>
-        <p class="text-muted-foreground text-sm">Track your money, simply.</p>
+        <p class="text-muted-foreground text-sm">
+          Track your money, Hi <span class="uppercase">{user.username}</span>.
+        </p>
       </div>
       <div class="flex items-center gap-1">
         {#if user}
@@ -29,13 +42,13 @@
           >
             <ChartColumn size={16} />
           </a>
-          <a
-            href="/settings"
+          <button
+            on:click={openSettings}
             class="hover:bg-accent inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
             title="Settings"
           >
             <Settings size={16} />
-          </a>
+          </button>
         {/if}
         <button
           on:click={() => theme.toggle()}
@@ -65,3 +78,5 @@
     <slot />
   </main>
 </div>
+
+<SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
