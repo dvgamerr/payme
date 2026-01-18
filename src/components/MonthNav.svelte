@@ -37,7 +37,10 @@
     }
 
     const monthName = MONTH_NAMES[prevMonth - 1]
-    window.location.href = `/${prevYear}/${monthName}`
+    const link = document.createElement('a')
+    link.href = `/${prevYear}/${monthName}`
+    link.dataset.astroTransition = 'backward'
+    link.click()
   }
 
   function goNext() {
@@ -53,12 +56,10 @@
     const now = new Date()
     const isCurrent = nextYear === now.getFullYear() && nextMonth === now.getMonth() + 1
 
-    if (isCurrent) {
-      window.location.href = '/'
-    } else {
-      const monthName = MONTH_NAMES[nextMonth - 1]
-      window.location.href = `/${nextYear}/${monthName}`
-    }
+    const link = document.createElement('a')
+    link.href = isCurrent ? '/' : `/${nextYear}/${MONTH_NAMES[nextMonth - 1]}`
+    link.dataset.astroTransition = 'forward'
+    link.click()
   }
 </script>
 
