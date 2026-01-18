@@ -151,7 +151,7 @@
     >
       <X size={16} />
     </button>
-    {#if mode === 'edit' && onDelete}
+    <!-- {#if mode === 'edit' && onDelete}
       <button
         on:click={onDelete}
         class="text-destructive cursor-pointer p-1.5 opacity-70 hover:opacity-100"
@@ -159,6 +159,6 @@
       >
         <Trash2 size={16} />
       </button>
-    {/if}
+    {/if} -->
   </div>
 </div>

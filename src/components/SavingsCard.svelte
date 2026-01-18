@@ -3,7 +3,7 @@
   import { Vault, Pencil, Check, X } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import Card from './ui/Card.svelte'
   import Input from './ui/Input.svelte'
 
@@ -71,7 +71,7 @@
   {:else}
     <div class="flex items-center justify-between">
       <span class="text-sage-700 dark:text-sage-400 text-sm font-semibold">
-        {currencySymbol}{numeral(savings).format('0,0.00')}
+        {formatCurrency(savings, currencySymbol)}
       </span>
       <button
         on:click={startEdit}

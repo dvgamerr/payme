@@ -1,7 +1,7 @@
 <script>
   import { TrendingUp, HelpCircle } from 'lucide-svelte'
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import Card from './ui/Card.svelte'
 
   export let savings = 0
@@ -19,7 +19,7 @@
   </div>
   <div class="flex items-center justify-between">
     <span class="text-sage-700 dark:text-sage-400 text-sm font-semibold">
-      {currencySymbol}{numeral(projected).format('0,0.00')}
+      {formatCurrency(projected, currencySymbol)}
     </span>
     {#if onAnalyzeClick}
       <button

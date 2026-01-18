@@ -2,7 +2,7 @@
   import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import Card from './ui/Card.svelte'
   import Input from './ui/Input.svelte'
 
@@ -108,7 +108,7 @@
             </span>
             <div class="flex items-center gap-2">
               <span class="text-foreground text-sm font-medium">
-                {currencySymbol}{numeral(entry.amount).format('0,0.00')}
+                {formatCurrency(entry.amount, currencySymbol)}
               </span>
               {#if !isReadOnly}
                 <button

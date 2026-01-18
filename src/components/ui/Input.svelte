@@ -32,27 +32,37 @@
   function formatInputNumber(value) {
     if (!value) return ''
 
-    // Remove all non-digit and non-decimal characters
-    let cleaned = String(value).replace(/[^\d.]/g, '')
+    // Check if negative
+    const isNegative = String(value).trim().startsWith('-')
+
+    // Remove all non-digit and non-decimal characters (but keep minus)
+    let cleaned = String(value).replace(/[^\d.-]/g, '')
+
+    // Remove extra minus signs (keep only the first one)
+    if (isNegative) {
+      cleaned = '-' + cleaned.replace(/-/g, '')
+    } else {
+      cleaned = cleaned.replace(/-/g, '')
+    }
 
     // Handle multiple decimal points
-    const parts = cleaned.split('.')
+    const parts = cleaned.replace('-', '').split('.')
     if (parts.length > 2) {
-      cleaned = parts[0] + '.' + parts.slice(1).join('')
+      cleaned = (isNegative ? '-' : '') + parts[0] + '.' + parts.slice(1).join('')
     }
 
     // Split into integer and decimal parts
-    const [integerPart, decimalPart] = cleaned.split('.')
+    const withoutMinus = cleaned.replace('-', '')
+    const [integerPart, decimalPart] = withoutMinus.split('.')
 
     // Format integer part with commas
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
-    // Combine back
-    if (decimalPart !== undefined) {
-      return `${formattedInteger}.${decimalPart}`
-    }
+    // Combine back with minus sign if needed
+    const formatted =
+      decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger
 
-    return formattedInteger
+    return isNegative ? `-${formatted}` : formatted
   }
 
   /**

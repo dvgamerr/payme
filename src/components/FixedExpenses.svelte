@@ -2,7 +2,7 @@
   import { Plus, GripVertical } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import { dndzone } from 'svelte-dnd-action'
   import { flip } from 'svelte/animate'
   import Card from './ui/Card.svelte'
@@ -63,7 +63,7 @@
     frequency = 'monthly'
     currency = 'THB'
     isAdding = false
-    onUpdate()
+    await onUpdate()
   }
 
   async function handleUpdate(id) {
@@ -189,7 +189,7 @@
                 {/if}
               </span>
               <span class="text-muted-foreground">
-                {currencySymbol}{numeral(getMonthlyAmount(expense)).format('0,0.00')}
+                {formatCurrency(getMonthlyAmount(expense), currencySymbol)}
               </span>
             </button>
           {/if}
@@ -218,7 +218,7 @@
     <div class="border-border mt-4 flex justify-between border-t pt-3">
       <span class="text-muted-foreground text-xs tracking-wide uppercase"> Total </span>
       <span class="text-foreground text-sm font-semibold">
-        {currencySymbol}{numeral(totalFixed).format('0,0.00')}
+        {formatCurrency(totalFixed, currencySymbol)}
       </span>
     </div>
   {/if}

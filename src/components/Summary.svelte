@@ -1,6 +1,6 @@
 <script>
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import Card from './ui/Card.svelte'
 
   export let totalIncome = 0
@@ -9,6 +9,32 @@
   export let remaining = 0
 
   $: currencySymbol = $settings.currencySymbol || '฿'
+
+  // Calculate remaining percentage and color
+  $: remainingPercent = totalIncome > 0 ? (remaining / totalIncome) * 100 : 0
+
+  // Calculate color variable for REMAINING based on percentage
+  $: remainingColorVar = (() => {
+    const percent = remainingPercent
+
+    if (percent >= 50) {
+      return 'var(--color-remaining-positive-50)'
+    } else if (percent >= 25) {
+      return 'var(--color-remaining-positive-25)'
+    } else if (percent > 0) {
+      return 'var(--color-remaining-positive-0)'
+    } else if (percent === 0) {
+      return 'var(--color-remaining-negative-0)'
+    } else if (percent >= -5) {
+      return 'var(--color-remaining-negative-5)'
+    } else if (percent >= -10) {
+      return 'var(--color-remaining-negative-10)'
+    } else if (percent >= -15) {
+      return 'var(--color-remaining-negative-15)'
+    } else {
+      return 'var(--color-remaining-negative-20)'
+    }
+  })()
 
   $: items = [
     {
@@ -38,12 +64,10 @@
           {item.label}
         </div>
         <div
-          class="text-foreground text-2xl font-semibold {item.label === 'REMAINING' &&
-          item.value < 0
-            ? 'text-destructive'
-            : ''}"
+          class="text-foreground text-2xl font-semibold"
+          style={item.label === 'REMAINING' ? `color: ${remainingColorVar}` : ''}
         >
-          {currencySymbol}{numeral(Math.abs(item.value)).format('0,0.00')}
+          {formatCurrency(item.value, currencySymbol)}
         </div>
       </div>
     </Card>

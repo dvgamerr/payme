@@ -2,7 +2,7 @@
   import { Plus, Trash2, Pen, Check, X, Settings } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
-  import numeral from 'numeral'
+  import { formatCurrency } from '../lib/format-utils.js'
   import Card from './ui/Card.svelte'
   import Input from './ui/Input.svelte'
   import Button from './ui/Button.svelte'
@@ -131,9 +131,10 @@
               </span>
               <div class="flex items-center gap-2">
                 <span class="text-muted-foreground text-xs">
-                  {currencySymbol}{numeral(budget.spent_amount).format('0,0.00')} / {currencySymbol}{numeral(
-                    budget.allocated_amount
-                  ).format('0,0.00')}
+                  {formatCurrency(budget.spent_amount, currencySymbol)} / {formatCurrency(
+                    budget.allocated_amount,
+                    currencySymbol
+                  )}
                 </span>
                 {#if !isReadOnly}
                   <button
@@ -192,7 +193,7 @@
             <span class="text-foreground text-sm">{cat.label}</span>
             <div class="flex items-center gap-2">
               <span class="text-muted-foreground text-xs">
-                {currencySymbol}{numeral(cat.default_amount).format('0,0.00')} default
+                {formatCurrency(cat.default_amount, currencySymbol)} default
               </span>
               <button
                 on:click={() => startEditCategory(cat)}
