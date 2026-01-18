@@ -129,7 +129,7 @@
 }
 
 @theme inline {
-  --font-mono: 'Maple Mono', 'Inter Fallback', system-ui, sans-serif;
+  --font-mono: 'Noto Sans Thai', 'Noto Sans', 'Maple Mono', system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

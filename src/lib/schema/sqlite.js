@@ -31,6 +31,32 @@ export const fixedExpenses = sqliteTable('fixed_expenses', {
   displayOrder: integer('display_order').notNull().default(0),
 })
 
+export const fixedMonths = sqliteTable(
+  'fixed_months',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    monthId: integer('month_id')
+      .notNull()
+      .references(() => months.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    amount: real('amount').notNull(),
+    displayOrder: integer('display_order').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    byUserMonth: index('idx_fixed_months_user_month').on(table.userId, table.monthId),
+    byMonth: index('idx_fixed_months_month').on(table.monthId),
+  })
+)
+
 export const userSettings = sqliteTable('user_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id')

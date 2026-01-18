@@ -30,7 +30,10 @@
       <div>
         <h1 class="text-2xl font-bold">Payme</h1>
         <p class="text-muted-foreground text-sm">
-          Track your money, Hi <span class="uppercase">{user.username}</span>.
+          Track your family's money. Hi, <span
+            class="bg-primary text-primary-foreground rounded px-1 py-0.5 text-sm font-medium uppercase"
+            >{user.username}</span
+          >.
         </p>
       </div>
       <div class="flex items-center gap-1">

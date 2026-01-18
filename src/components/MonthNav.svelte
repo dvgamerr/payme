@@ -2,9 +2,8 @@
   import { ChevronLeft, ChevronRight, FileDown, Lock } from 'lucide-svelte'
   import Button from './ui/Button.svelte'
 
-  export let months = []
-  export let selectedMonthId = null
-  export let onSelect = () => {}
+  export let year = undefined
+  export let month = undefined
 
   const MONTH_NAMES = [
     'Jan',
@@ -21,60 +20,72 @@
     'Dec',
   ]
 
-  $: selectedMonth = months.find((m) => m.id === selectedMonthId)
-  $: currentIndex = months.findIndex((m) => m.id === selectedMonthId)
-
-  $: {
-    const now = new Date()
-    const isCurrentCalendarMonth =
-      selectedMonth?.year === now.getFullYear() && selectedMonth?.month === now.getMonth() + 1
-    const isLastDay = now.getDate() === new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    canClose = isCurrentCalendarMonth && isLastDay && !selectedMonth?.is_closed
-  }
-
-  let canClose = false
+  // Determine current year/month from props or current date
+  $: currentYear = year || new Date().getFullYear()
+  $: currentMonthIndex = month
+    ? MONTH_NAMES.findIndex((m) => m.toLowerCase() === month.toLowerCase())
+    : new Date().getMonth()
+  $: currentMonth = currentMonthIndex + 1
 
   function goPrev() {
-    if (currentIndex < months.length - 1) {
-      const targetMonth = months[currentIndex + 1]
-      onSelect(targetMonth.id)
+    let prevYear = currentYear
+    let prevMonth = currentMonth - 1
+
+    if (prevMonth < 1) {
+      prevMonth = 12
+      prevYear--
     }
+
+    const monthName = MONTH_NAMES[prevMonth - 1]
+    window.location.href = `/${prevYear}/${monthName}`
   }
 
   function goNext() {
-    if (currentIndex > 0) {
-      const targetMonth = months[currentIndex - 1]
-      onSelect(targetMonth.id)
+    let nextYear = currentYear
+    let nextMonth = currentMonth + 1
+
+    if (nextMonth > 12) {
+      nextMonth = 1
+      nextYear++
+    }
+
+    // Check if it's current month
+    const now = new Date()
+    const isCurrent = nextYear === now.getFullYear() && nextMonth === now.getMonth() + 1
+
+    if (isCurrent) {
+      window.location.href = '/'
+    } else {
+      const monthName = MONTH_NAMES[nextMonth - 1]
+      window.location.href = `/${nextYear}/${monthName}`
     }
   }
 </script>
 
-{#if selectedMonth}
-  <div class="mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <button
-        on:click={goPrev}
-        disabled={currentIndex >= months.length - 1}
-        class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:opacity-30"
-      >
-        <ChevronLeft size={18} />
-      </button>
-      <div class="text-lg font-medium">
-        {MONTH_NAMES[selectedMonth.month - 1]}
-        {selectedMonth.year}
-      </div>
-      <button
-        on:click={goNext}
-        disabled={currentIndex <= 0}
-        class="hover:bg-accent flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:opacity-30"
-      >
-        <ChevronRight size={18} />
-      </button>
+<div class="mb-6 flex items-center justify-between">
+  <div class="flex items-center gap-2">
+    <button
+      on:click={goPrev}
+      class="hover:bg-accent flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:cursor-default disabled:opacity-20"
+    >
+      <ChevronLeft size={18} />
+    </button>
+    <div class="text-lg font-medium">
+      {MONTH_NAMES[currentMonth - 1]}
+      {currentYear}
     </div>
-
-    <div class="text-muted-foreground flex items-center gap-2 text-sm">
-      Savings goal
-      <span class="text-accent-gold font-medium">฿10,000</span>
-    </div>
+    <button
+      on:click={goNext}
+      disabled={currentYear === new Date().getFullYear() &&
+        currentMonth === new Date().getMonth() + 1}
+      class="hover:bg-accent flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:cursor-default disabled:opacity-20"
+    >
+      <ChevronRight size={18} />
+    </button>
   </div>
-{/if}
+
+  <div class="text-muted-foreground flex items-center gap-2 text-sm">
+    Savings goal
+    <span class="text-accent-gold font-medium">฿10,000</span>
+  </div>
+</div>

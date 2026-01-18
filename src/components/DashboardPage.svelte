@@ -11,6 +11,7 @@
   import VarianceModal from './VarianceModal.svelte'
   import IncomeSection from './IncomeSection.svelte'
   import FixedExpenses from './FixedExpenses.svelte'
+  import FixedMonths from './FixedMonths.svelte'
   // import BudgetSection from './BudgetSection.svelte'
   import ItemsSection from './ItemsSection.svelte'
   import Stats from './Stats.svelte'
@@ -36,10 +37,10 @@
   let savings = 0
   let showVarianceModal = false
   let summary = null
-  let months = []
   let categories = []
   let selectedMonthId = null
   let loading = true
+  let isCurrentMonth = false
 
   onMount(async () => {
     await loadData()
@@ -49,45 +50,50 @@
     try {
       loading = true
 
-      // Load all months first
-      const allMonths = await api.months.list()
-      months = allMonths.sort((a, b) => {
-        if (a.year !== b.year) return b.year - a.year
-        return b.month - a.month
-      })
-
       // Load categories
       categories = await api.categories.list()
 
       // Determine which month to load
-      let targetMonth = null
       if (year && month) {
-        // Find month by year and month name
+        // Get or create month by (year, month)
         const monthIndex = MONTH_NAMES.findIndex((m) => m.toLowerCase() === month.toLowerCase())
-        if (monthIndex !== -1) {
-          targetMonth = months.find((m) => m.year === parseInt(year) && m.month === monthIndex + 1)
-        }
-      }
 
-      if (!targetMonth) {
-        // Load current month
-        const currentSummary = await api.months.current()
-        if (!currentSummary || !currentSummary.month || !currentSummary.month.id) {
-          console.error('Failed to get current month:', currentSummary)
-          return
+        if (monthIndex !== -1) {
+          const result = await api.months.create(parseInt(year), monthIndex + 1)
+          if (result && result.month) {
+            selectedMonthId = result.month.id
+            const now = new Date()
+            isCurrentMonth =
+              result.month.year === now.getFullYear() && result.month.month === now.getMonth() + 1
+            await loadMonthSummary(result.month.id)
+          } else {
+            // Invalid response, use current month
+            await loadCurrentMonth()
+          }
+        } else {
+          // Invalid month name, use current month
+          await loadCurrentMonth()
         }
-        summary = currentSummary
-        selectedMonthId = currentSummary.month.id
       } else {
-        // Load specified month
-        selectedMonthId = targetMonth.id
-        await loadMonthSummary(targetMonth.id)
+        // No year/month specified, use current month
+        await loadCurrentMonth()
       }
     } catch (err) {
       console.error('Error loading data:', err)
     } finally {
       loading = false
     }
+  }
+
+  async function loadCurrentMonth() {
+    const currentSummary = await api.months.current()
+    if (!currentSummary || !currentSummary.month || !currentSummary.month.id) {
+      console.error('Failed to get current month:', currentSummary)
+      return
+    }
+    selectedMonthId = currentSummary.month.id
+    isCurrentMonth = true
+    await loadMonthSummary(selectedMonthId)
   }
 
   async function loadMonthSummary(monthId) {
@@ -101,14 +107,23 @@
       const incomeEntries = await api.income.list(monthId)
       const budgets = await api.budgets.list(monthId)
       const items = await api.items.list(monthId)
-      const fixedExpenses = await api.fixedExpenses.list()
+
+      // ใช้ fixed_expenses สำหรับ current month, fixed_months สำหรับเดือนย้อนหลัง
+      let fixedExpenses
+      let totalFixed
+      if (isCurrentMonth) {
+        fixedExpenses = await api.fixedExpenses.list()
+        totalFixed = fixedExpenses.reduce((sum, e) => {
+          const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
+          const exchangeRate = e.exchange_rate || 1
+          return sum + monthlyAmount * exchangeRate
+        }, 0)
+      } else {
+        fixedExpenses = await api.fixedMonths.list(monthId)
+        totalFixed = fixedExpenses.reduce((sum, e) => sum + e.amount, 0)
+      }
 
       const totalIncome = incomeEntries.reduce((sum, e) => sum + e.amount, 0)
-      const totalFixed = fixedExpenses.reduce((sum, e) => {
-        const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
-        const exchangeRate = e.exchange_rate || 1
-        return sum + monthlyAmount * exchangeRate
-      }, 0)
       const totalSpent = items.reduce((sum, i) => sum + i.amount, 0)
       const totalBudgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
       const remaining = totalIncome - totalFixed - totalSpent
@@ -127,30 +142,6 @@
       }
     } catch (err) {
       console.error('Failed to load month summary:', err)
-    }
-  }
-
-  async function selectMonth(id) {
-    if (!id) {
-      console.error('selectMonth called with invalid id:', id)
-      return
-    }
-
-    const targetMonth = months.find((m) => m.id === id)
-    if (!targetMonth) return
-
-    // Check if it's current month
-    const now = new Date()
-    const isCurrentMonth =
-      targetMonth.year === now.getFullYear() && targetMonth.month === now.getMonth() + 1
-
-    if (isCurrentMonth) {
-      // Navigate to root
-      window.location.href = '/'
-    } else {
-      // Navigate to /year/month
-      const monthName = MONTH_NAMES[targetMonth.month - 1]
-      window.location.href = `/${targetMonth.year}/${monthName}`
     }
   }
 
@@ -193,7 +184,7 @@
   </Layout>
 {:else}
   <Layout>
-    <MonthNav {months} {selectedMonthId} onSelect={selectMonth} />
+    <MonthNav {year} {month} />
 
     <div class="space-y-6">
       <Summary
@@ -210,11 +201,20 @@
           isReadOnly={summary.month.is_closed}
           onUpdate={refresh}
         />
-        <FixedExpenses
-          expenses={summary.fixed_expenses}
-          totalFixed={summary.total_fixed}
-          onUpdate={refresh}
-        />
+        {#if isCurrentMonth}
+          <FixedExpenses
+            expenses={summary.fixed_expenses}
+            totalFixed={summary.total_fixed}
+            onUpdate={refresh}
+          />
+        {:else}
+          <FixedMonths
+            monthId={selectedMonthId}
+            fixedExpenses={summary.fixed_expenses}
+            totalFixed={summary.total_fixed}
+            onUpdate={refresh}
+          />
+        {/if}
         <!-- <BudgetSection
           monthId={selectedMonthId}
           budgets={summary.budgets}

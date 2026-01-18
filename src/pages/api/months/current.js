@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { db, schema } from '../../../lib/db.js'
 import { requireAuth } from '../../../lib/middleware.js'
 import { handleApiRequest, jsonSuccess, jsonError } from '../../../lib/api-utils.js'
-import { getMonthSummary } from '../../../lib/db-helpers.js'
+import { getMonthSummary, copyFixedExpensesToMonth } from '../../../lib/db-helpers.js'
 
 const { budgetCategories, monthlyBudgets, months } = schema
 
@@ -42,6 +42,8 @@ export const GET = async ({ cookies }) => {
           }))
         )
       }
+
+      await copyFixedExpensesToMonth(result.id, user.id)
     }
 
     const summary = await getMonthSummary(result.id, user.id)

@@ -38,9 +38,9 @@ export const api = {
   },
 
   months: {
-    list: () => request('/months'),
     current: () => request('/months/current'),
     get: (id) => request(`/months/${id}`),
+    create: (year, month) => request(`/months?year=${year}&month=${month}`),
     close: (id) => request(`/months/${id}/close`, { method: 'POST' }),
     downloadPdf: async (id) => {
       const response = await fetch(`${BASE_URL}/months/${id}/pdf`, {
@@ -65,6 +65,26 @@ export const api = {
     delete: (id) => request(`/fixed-expenses/${id}`, { method: 'DELETE' }),
     reorder: (order) =>
       request('/fixed-expenses/reorder', {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
+  },
+
+  fixedMonths: {
+    list: (monthId) => request(`/months/${monthId}/fixed-months`),
+    create: (monthId, data) =>
+      request(`/months/${monthId}/fixed-months`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (monthId, id, data) =>
+      request(`/months/${monthId}/fixed-months/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (monthId, id) => request(`/months/${monthId}/fixed-months/${id}`, { method: 'DELETE' }),
+    reorder: (monthId, order) =>
+      request(`/months/${monthId}/fixed-months/reorder`, {
         method: 'PUT',
         body: JSON.stringify({ order }),
       }),

@@ -7,7 +7,15 @@ import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import logger from './logger.js'
 import { db, schema } from './db.js'
 
-const { budgetCategories, fixedExpenses, incomeEntries, items, monthlyBudgets, months } = schema
+const {
+  budgetCategories,
+  fixedExpenses,
+  fixedMonths,
+  incomeEntries,
+  items,
+  monthlyBudgets,
+  months,
+} = schema
 
 /**
  * Get comprehensive month summary with all related data
@@ -43,18 +51,15 @@ export const getMonthSummary = async (monthId, userId) => {
 
   const fixed_expenses = await db
     .select({
-      id: fixedExpenses.id,
-      user_id: fixedExpenses.userId,
-      label: fixedExpenses.label,
-      amount: fixedExpenses.amount,
-      frequency: fixedExpenses.frequency,
-      currency: fixedExpenses.currency,
-      exchange_rate: fixedExpenses.exchangeRate,
-      display_order: fixedExpenses.displayOrder,
+      id: fixedMonths.id,
+      month_id: fixedMonths.monthId,
+      name: fixedMonths.name,
+      amount: fixedMonths.amount,
+      display_order: fixedMonths.displayOrder,
     })
-    .from(fixedExpenses)
-    .where(eq(fixedExpenses.userId, userId))
-    .orderBy(asc(fixedExpenses.displayOrder))
+    .from(fixedMonths)
+    .where(eq(fixedMonths.monthId, monthId))
+    .orderBy(asc(fixedMonths.displayOrder))
 
   const budgets = await db
     .select({
@@ -99,11 +104,7 @@ export const getMonthSummary = async (monthId, userId) => {
     .orderBy(desc(items.spentOn), desc(items.id))
 
   const total_income = income_entries.reduce((sum, e) => sum + e.amount, 0)
-  const total_fixed = fixed_expenses.reduce((sum, e) => {
-    const monthlyAmount = e.frequency === 'yearly' ? e.amount / 12 : e.amount
-    const exchangeRate = e.exchange_rate || 1
-    return sum + monthlyAmount * exchangeRate
-  }, 0)
+  const total_fixed = fixed_expenses.reduce((sum, e) => sum + e.amount, 0)
   const total_budgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
   const total_spent = itemsRows.reduce((sum, i) => sum + i.amount, 0)
   const remaining = total_income + total_fixed - total_spent
@@ -236,4 +237,85 @@ export const verifyResourceOwnership = async (
   }
 
   return resource
+}
+
+/**
+ * Get fixed_months by monthId
+ */
+export const getFixedMonthsByMonthId = async (monthId, userId) => {
+  const fixedMonthsRows = await db
+    .select({
+      id: fixedMonths.id,
+      user_id: fixedMonths.userId,
+      month_id: fixedMonths.monthId,
+      name: fixedMonths.name,
+      amount: fixedMonths.amount,
+      display_order: fixedMonths.displayOrder,
+      created_at: fixedMonths.createdAt,
+      updated_at: fixedMonths.updatedAt,
+    })
+    .from(fixedMonths)
+    .where(and(eq(fixedMonths.monthId, monthId), eq(fixedMonths.userId, userId)))
+    .orderBy(asc(fixedMonths.displayOrder))
+
+  return fixedMonthsRows
+}
+
+/**
+ * Copy fixed_expenses to fixed_months for a specific month
+ */
+export const copyFixedExpensesToMonth = async (monthId, userId) => {
+  const existingFixedExpenses = await db
+    .select({
+      label: fixedExpenses.label,
+      amount: fixedExpenses.amount,
+      frequency: fixedExpenses.frequency,
+      currency: fixedExpenses.currency,
+      exchange_rate: fixedExpenses.exchangeRate,
+      display_order: fixedExpenses.displayOrder,
+    })
+    .from(fixedExpenses)
+    .where(eq(fixedExpenses.userId, userId))
+    .orderBy(asc(fixedExpenses.displayOrder))
+
+  if (existingFixedExpenses.length > 0) {
+    const fixedMonthsData = existingFixedExpenses.map((expense) => {
+      const monthlyAmount = expense.frequency === 'yearly' ? expense.amount / 12 : expense.amount
+      const exchangeRate = expense.exchange_rate || 1
+      const finalAmount = monthlyAmount * exchangeRate
+
+      return {
+        userId,
+        monthId,
+        name: expense.label,
+        amount: finalAmount,
+        displayOrder: expense.display_order ?? 0,
+      }
+    })
+
+    await db.insert(fixedMonths).values(fixedMonthsData)
+  }
+}
+
+/**
+ * Verify fixed_month ownership
+ */
+export const verifyFixedMonthOwnership = async (fixedMonthId, userId) => {
+  const rows = await db
+    .select({ id: fixedMonths.id, user_id: fixedMonths.userId })
+    .from(fixedMonths)
+    .where(eq(fixedMonths.id, fixedMonthId))
+    .limit(1)
+
+  const fixedMonth = rows[0]
+
+  if (!fixedMonth) {
+    throw new Error('Fixed month not found')
+  }
+
+  if (fixedMonth.user_id !== userId) {
+    throw new Error('Fixed month not found')
+  }
+
+  return fixedMonth
 }
