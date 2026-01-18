@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import logger from '../lib/client-logger.js'
 import { api } from '../lib/api.js'
 
 function createAuthStore() {
@@ -49,7 +50,7 @@ function createAuthStore() {
         await api.auth.logout()
         set({ user: null, loading: false, error: null })
       } catch (error) {
-        console.error('Logout failed:', error)
+        logger.error('Logout failed', error)
       }
     },
 

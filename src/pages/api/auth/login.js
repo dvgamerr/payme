@@ -1,3 +1,4 @@
+import logger from '../../../lib/logger.js'
 import { loginUser, createSession } from '../../../lib/auth.js'
 import {
   handleApiRequest,
@@ -22,7 +23,7 @@ export const POST = async ({ request, cookies }) => {
 
       return jsonSuccess({ id: user.id, username: user.username })
     } catch (error) {
-      console.error('Login error:', error)
+      logger.warn({ err: error, username }, 'Login failed')
       return jsonError('Invalid credentials', 401)
     }
   })

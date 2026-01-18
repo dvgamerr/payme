@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import logger from '../lib/client-logger.js'
 
 const defaultSettings = {
   baseCurrency: 'THB',
@@ -28,7 +29,7 @@ function createSettingsStore() {
           set({ ...defaultSettings, loaded: true })
         }
       } catch (error) {
-        console.error('Failed to load settings:', error)
+        logger.error('Failed to load settings', error)
         set({ ...defaultSettings, loaded: true })
       }
     },
@@ -54,7 +55,7 @@ function createSettingsStore() {
           return false
         }
       } catch (error) {
-        console.error('Failed to save settings:', error)
+        logger.error('Failed to save settings', error)
         return false
       }
     },

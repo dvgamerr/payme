@@ -3,6 +3,8 @@
  * Standardized response handlers for consistent API responses
  */
 
+import logger from './logger.js'
+
 const jsonHeaders = { 'Content-Type': 'application/json' }
 
 /**
@@ -72,7 +74,7 @@ export const handleApiRequest = async (handler, cookies) => {
   try {
     return await handler()
   } catch (error) {
-    console.error('API error:', error)
+    logger.error({ err: error }, 'API error')
 
     // Handle specific error types
     if (error.message === 'Unauthorized') {

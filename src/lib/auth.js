@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import { and, eq, gt, lte } from 'drizzle-orm'
+import logger from './logger.js'
 import { db, nowSql, schema } from './db.js'
 
 const { sessions, users } = schema
@@ -60,7 +61,7 @@ export async function cleanupExpiredSessions() {
     .where(lte(sessions.expiresAt, nowSql))
     .returning({ id: sessions.id })
   if (deleted.length > 0) {
-    console.log(`Cleaned up ${deleted.length} expired sessions`)
+    logger.info({ count: deleted.length }, 'Cleaned up expired sessions')
   }
 }
 
@@ -113,7 +114,9 @@ export async function loginUser(username, password) {
 // Run cleanup every 6 hours
 setInterval(
   () => {
-    cleanupExpiredSessions().catch((error) => console.error('Session cleanup failed:', error))
+    cleanupExpiredSessions().catch((error) =>
+      logger.error({ err: error }, 'Session cleanup failed')
+    )
   },
   6 * 60 * 60 * 1000
 )

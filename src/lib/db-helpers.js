@@ -4,6 +4,7 @@
  */
 
 import { eq } from 'drizzle-orm'
+import logger from './logger.js'
 import { db, schema } from './db.js'
 
 const { months, budgetCategories } = schema
@@ -75,6 +76,7 @@ export const withTransaction = async (callback) => {
     return result
   } catch (error) {
     // SQLite auto-rollback on error
+    logger.error({ err: error }, 'Database transaction error')
     throw error
   }
 }

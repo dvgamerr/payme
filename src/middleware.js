@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro:middleware'
+import logger from './lib/logger.js'
 import { getUserFromSession } from './lib/auth.js'
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -13,7 +14,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         locals.user = user
       }
     } catch (error) {
-      console.error('[Middleware] Error getting user from session:', error)
+      logger.error({ err: error, sessionId }, 'Middleware: Error getting user from session')
     }
   }
 
