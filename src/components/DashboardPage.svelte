@@ -60,6 +60,7 @@
 
         if (monthIndex !== -1) {
           const result = await api.months.create(parseInt(year), monthIndex + 1)
+          console.log(JSON.stringify({ result }))
           if (result && result.month) {
             selectedMonthId = result.month.id
             const now = new Date()
@@ -86,14 +87,13 @@
   }
 
   async function loadCurrentMonth() {
-    const currentSummary = await api.months.current()
-    if (!currentSummary || !currentSummary.month || !currentSummary.month.id) {
-      console.error('Failed to get current month:', currentSummary)
+    const month = await api.months.current()
+    if (!month || !month.id) {
+      console.error('Failed to get current month:', month)
       return
     }
-    selectedMonthId = currentSummary.month.id
     isCurrentMonth = true
-    await loadMonthSummary(selectedMonthId)
+    await loadMonthSummary(month.id)
   }
 
   async function loadMonthSummary(monthId) {
@@ -104,8 +104,6 @@
 
     try {
       const month = await api.months.get(monthId)
-      const incomeEntries = await api.income.list(monthId)
-      const budgets = await api.budgets.list(monthId)
       const items = await api.items.list(monthId)
 
       // ใช้ fixed_expenses สำหรับ current month, fixed_months สำหรับเดือนย้อนหลัง
@@ -123,22 +121,14 @@
         totalFixed = fixedExpenses.reduce((sum, e) => sum + e.amount, 0)
       }
 
-      const totalIncome = incomeEntries.reduce((sum, e) => sum + e.amount, 0)
       const totalSpent = items.reduce((sum, i) => sum + i.amount, 0)
-      const totalBudgeted = budgets.reduce((sum, b) => sum + b.allocated_amount, 0)
-      const remaining = totalIncome - totalFixed - totalSpent
 
       summary = {
-        month,
-        income_entries: incomeEntries,
-        budgets,
+        ...month,
         items,
         fixed_expenses: fixedExpenses,
-        total_income: totalIncome,
         total_fixed: totalFixed,
         total_spent: totalSpent,
-        total_budgeted: totalBudgeted,
-        remaining,
       }
     } catch (err) {
       console.error('Failed to load month summary:', err)
@@ -238,7 +228,7 @@
       budgets={summary.budgets}
       totalIncome={summary.total_income}
       totalFixed={summary.total_fixed}
-      totalBudgeted={summary.total_budgeted}
+      totalBudgeted={0}
     />
   </Layout>
 {/if}

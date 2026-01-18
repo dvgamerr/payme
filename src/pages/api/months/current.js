@@ -15,7 +15,14 @@ export const GET = async ({ cookies }) => {
     const month = now.getMonth() + 1
 
     const existingRows = await db
-      .select({ id: months.id })
+      .select({
+        id: months.id,
+        user_id: months.userId,
+        year: months.year,
+        month: months.month,
+        is_closed: months.isClosed,
+        closed_at: months.closedAt,
+      })
       .from(months)
       .where(and(eq(months.userId, user.id), eq(months.year, year), eq(months.month, month)))
       .limit(1)
@@ -46,12 +53,6 @@ export const GET = async ({ cookies }) => {
       await copyFixedExpensesToMonth(result.id, user.id)
     }
 
-    const summary = await getMonthSummary(result.id, user.id)
-
-    if (!summary) {
-      return jsonError('Month not found', 404)
-    }
-
-    return jsonSuccess(summary)
+    return jsonSuccess(result)
   })
 }
