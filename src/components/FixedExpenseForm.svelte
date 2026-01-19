@@ -91,7 +91,7 @@
   }
 </script>
 
-<div class="flex flex-1 items-end gap-2">
+<div class="flex flex-1 items-end gap-2 {!dragHandleProps || mode === 'add' ? ' -mt-px pl-4' : ''}">
   {#if mode === 'edit' && dragHandleProps}
     <button
       {...dragHandleProps}
@@ -147,14 +147,14 @@
   <div class="flex items-center gap-1">
     <button
       on:click={onSave}
-      class="text-success cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+      class="text-success hover:bg-accent my-1.5 cursor-pointer rounded-lg p-1 opacity-70 transition-colors hover:opacity-100"
       title="บันทึก"
     >
       <Check size={16} />
     </button>
     <button
       on:click={onCancel}
-      class="text-muted-foreground cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+      class="text-muted-foreground hover:bg-accent my-1.5 cursor-pointer rounded-lg p-1 opacity-70 transition-colors hover:opacity-100"
       title="ยกเลิก"
     >
       <X size={16} />

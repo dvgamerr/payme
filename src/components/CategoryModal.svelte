@@ -71,15 +71,14 @@
     isAdding = false
   }
 
-  const handleClose = () => {
+  const onClose = () => {
     resetForm()
     open = false
   }
 </script>
 
-<Modal {isOpen} onClose={handleClose}>
+<Modal {isOpen} {onClose} title="Manage Categories">
   <div class="mb-4 flex items-center justify-between">
-    <h2 class="text-foreground text-lg font-semibold">Manage Categories</h2>
     {#if !isAdding}
       <button
         on:click={() => (isAdding = true)}
@@ -192,9 +191,5 @@
         {/each}
       </div>
     {/if}
-  </div>
-
-  <div class="border-border mt-4 border-t pt-4">
-    <Button variant="ghost" on:click={handleClose} className="w-full">Close</Button>
   </div>
 </Modal>

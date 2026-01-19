@@ -173,7 +173,8 @@
           {:else}
             <button
               on:click={() => startEdit(expense)}
-              class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-[0.5em] px-3 py-2 text-left text-sm transition-colors"
+              class="text-foreground hover:bg-muted flex flex-1 items-center justify-between rounded-[0.5em] py-2 text-left text-sm
+              {editingId || isAdding ? 'pl-4' : ''}"
             >
               {#if !editingId && !isAdding}
                 <div
