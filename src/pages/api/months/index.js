@@ -27,7 +27,7 @@ export const GET = async ({ cookies, url }) => {
         .get()
 
       if (existingMonth) {
-        return jsonSuccess({ month: existingMonth })
+        return jsonSuccess(existingMonth)
       }
 
       // Create new month
@@ -42,28 +42,7 @@ export const GET = async ({ cookies, url }) => {
         .returning()
         .get()
 
-      return jsonSuccess({ month: newMonth }, 201)
+      return jsonSuccess(newMonth, 201)
     }
-
-    // Otherwise, list all months
-    const rows = await db
-      .select({
-        id: months.id,
-        user_id: months.userId,
-        year: months.year,
-        month: months.month,
-        is_closed: months.isClosed,
-        closed_at: months.closedAt,
-      })
-      .from(months)
-      .where(eq(months.userId, userId))
-      .orderBy(desc(months.year), desc(months.month))
-
-    const result = rows.map((m) => ({
-      ...m,
-      is_closed: Boolean(m.is_closed),
-    }))
-
-    return jsonSuccess(result)
   })
 }

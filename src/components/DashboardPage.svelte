@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte'
+  import { fade, fly } from 'svelte/transition'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import Layout from './Layout.svelte'
@@ -38,7 +39,6 @@
   let summary = null
   let categories = []
   let selectedMonthId = null
-  let loading = true
   let isCurrentMonth = false
 
   onMount(async () => {
@@ -46,43 +46,37 @@
   })
 
   const loadData = async () => {
-    loading = true
-
     // Load categories
     categories = await api.categories.list()
     const monthIndex = MONTH_NAMES.findIndex((m) => m.toLowerCase() === month?.toLowerCase())
 
-    console.log({ year, month, monthIndex })
-    if (!year || !month || monthIndex < 0) {
-      await loadCurrentMonth()
-      loading = false
-      return
-    }
-
-    const result = await api.months.create(parseInt(year), monthIndex + 1)
-    if (result && result.month) {
-      selectedMonthId = result.month.id
-      const now = new Date()
-      isCurrentMonth =
-        result.month.year === now.getFullYear() && result.month.month === now.getMonth() + 1
-      await loadMonthSummary(result.month.id)
+    let current = null
+    if (year && month) {
+      current = await api.months.create(parseInt(year), monthIndex + 1)
     } else {
-      // Invalid response, use current month
-      await loadCurrentMonth()
+      current = await api.months.current()
     }
-    loading = false
-  }
 
-  async function loadCurrentMonth() {
-    const month = await api.months.current()
-    console.log({ ...month })
-    if (!month || !month.id) {
-      console.error('Failed to get current month:', month)
+    if (monthIndex < 0) {
+      if (!current || !current.id) {
+        console.error('Failed to get current month:', current)
+        return
+      }
+      isCurrentMonth = true
+      await loadMonthSummary(current.id)
+
       return
     }
-    isCurrentMonth = true
-    await loadMonthSummary(month.id)
+
+    selectedMonthId = current.id
+    const now = new Date()
+    isCurrentMonth = current.year === now.getFullYear() && current.month === now.getMonth() + 1
+    await loadMonthSummary(current.id)
   }
+
+  // async function loadCurrentMonth() {
+
+  // }
 
   async function loadMonthSummary(monthId) {
     if (!monthId) {
@@ -126,15 +120,10 @@
 
   async function refresh() {
     if (!selectedMonthId) {
-      console.warn('refresh() called before selectedMonthId is set, reloading all data')
       await loadData()
       return
     }
-    try {
-      await loadMonthSummary(selectedMonthId)
-    } catch (err) {
-      console.error('Error refreshing data:', err)
-    }
+    await loadMonthSummary(selectedMonthId)
   }
 
   async function closeMonth() {
@@ -151,73 +140,69 @@
   }
 </script>
 
-{#if loading && !summary}
-  <Layout>
-    <div class="flex items-center justify-center py-20">
-      <div class="border-charcoal-400 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-    </div>
-  </Layout>
-{:else if !summary}
-  <Layout>
-    <div class="text-charcoal-500 py-20 text-center">Unable to load data</div>
-  </Layout>
-{:else}
-  <Layout>
-    <MonthNav {year} {month} />
+<Layout>
+  <MonthNav {year} {month} />
 
-    <div class="space-y-6">
-      <Summary
-        totalIncome={summary.total_income}
-        totalFixed={summary.total_fixed}
-        totalSpent={summary.total_spent}
-        remaining={summary.remaining}
-      />
-
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <IncomeSection
-          monthId={selectedMonthId}
-          entries={summary.income_entries}
-          isReadOnly={summary.month.is_closed}
-          onUpdate={refresh}
+  {#key selectedMonthId}
+    <div
+      class="space-y-6"
+      in:fly={{ y: 20, duration: 300, delay: 50 }}
+      out:fade={{ duration: 200 }}
+    >
+      {#if summary}
+        <Summary
+          totalIncome={summary.total_income}
+          totalFixed={summary.total_fixed}
+          totalSpent={summary.total_spent}
+          remaining={summary.remaining}
         />
-        {#if isCurrentMonth}
-          <FixedExpenses
-            expenses={summary.fixed_expenses}
-            totalFixed={summary.total_fixed}
-            onUpdate={refresh}
-          />
-        {:else}
-          <FixedMonths
+
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <IncomeSection
             monthId={selectedMonthId}
-            fixedExpenses={summary.fixed_expenses}
-            totalFixed={summary.total_fixed}
+            entries={summary.income_entries}
+            isReadOnly={summary.month.is_closed}
             onUpdate={refresh}
           />
-        {/if}
-        <!-- <BudgetSection
+          {#if isCurrentMonth}
+            <FixedExpenses
+              expenses={summary.fixed_expenses}
+              totalFixed={summary.total_fixed}
+              onUpdate={refresh}
+            />
+          {:else}
+            <FixedMonths
+              monthId={selectedMonthId}
+              fixedExpenses={summary.fixed_expenses}
+              totalFixed={summary.total_fixed}
+              onUpdate={refresh}
+            />
+          {/if}
+          <!-- <BudgetSection
           monthId={selectedMonthId}
           budgets={summary.budgets}
           {categories}
           isReadOnly={summary.month.is_closed}
           onUpdate={refresh}
         /> -->
-      </div>
+        </div>
 
-      <ItemsSection
-        monthId={selectedMonthId}
-        items={summary.items}
-        {categories}
-        isReadOnly={summary.month.is_closed}
-        onUpdate={refresh}
-      />
+        <ItemsSection
+          monthId={selectedMonthId}
+          items={summary.items}
+          {categories}
+          isReadOnly={summary.month.is_closed}
+          onUpdate={refresh}
+        />
+      {/if}
     </div>
+  {/key}
 
-    <VarianceModal
-      bind:isOpen={showVarianceModal}
-      budgets={summary.budgets}
-      totalIncome={summary.total_income}
-      totalFixed={summary.total_fixed}
-      totalBudgeted={0}
-    />
-  </Layout>
-{/if}
+  <VarianceModal
+    bind:isOpen={showVarianceModal}
+    budgets={summary?.budgets}
+    totalIncome={summary?.total_income}
+    totalFixed={summary?.total_fixed}
+    totalBudgeted={0}
+  />
+</Layout>

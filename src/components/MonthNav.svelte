@@ -1,6 +1,5 @@
 <script>
-  import { ChevronLeft, ChevronRight, FileDown, Lock } from 'lucide-svelte'
-  import Button from './ui/Button.svelte'
+  import { ChevronLeft, ChevronRight } from 'lucide-svelte'
 
   export let year = undefined
   export let month = undefined
@@ -20,12 +19,14 @@
     'Dec',
   ]
 
+  console.log({ year, month })
+
   // Determine current year/month from props or current date
   $: currentYear = year || new Date().getFullYear()
-  $: currentMonthIndex = month
-    ? MONTH_NAMES.findIndex((m) => m.toLowerCase() === month.toLowerCase())
-    : new Date().getMonth()
-  $: currentMonth = currentMonthIndex + 1
+  $: currentMonth =
+    (month
+      ? MONTH_NAMES.findIndex((m) => m.toLowerCase() === month?.toLowerCase())
+      : new Date().getMonth()) + 1
 
   function goPrev() {
     let prevYear = currentYear
@@ -57,9 +58,13 @@
     const isCurrent = nextYear === now.getFullYear() && nextMonth === now.getMonth() + 1
 
     const link = document.createElement('a')
-    link.href = isCurrent ? '/' : `/${nextYear}/${MONTH_NAMES[nextMonth - 1]}`
+    link.href = `/${nextYear}/${MONTH_NAMES[nextMonth - 1]}`
     link.dataset.astroTransition = 'forward'
     link.click()
+
+    // setTimeout(() => {
+    //   if (isCurrent) history.replaceState(null, null, '/')
+    // }, 2000)
   }
 </script>
 
@@ -77,7 +82,7 @@
     </div>
     <button
       on:click={goNext}
-      disabled={currentYear === new Date().getFullYear() &&
+      disabled={currentYear === new Date().getFullYear().toString() &&
         currentMonth === new Date().getMonth() + 1}
       class="hover:bg-accent flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition-colors disabled:cursor-default disabled:opacity-20"
     >

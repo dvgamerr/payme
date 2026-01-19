@@ -1,6 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions'
-
 interface Props {
   title?: string
 }
@@ -17,7 +15,6 @@ const { title = 'PayMe - Budget Tracker' } = Astro.props
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <ClientRouter />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -35,26 +32,3 @@ const { title = 'PayMe - Budget Tracker' } = Astro.props
 <style is:global>
   @import '../styles/global.css';
 </style>
-
-<script>
-  import { navigate } from 'astro:transitions/client'
-
-  // Listen for navigation with direction data
-  document.addEventListener('astro:before-preparation', (event) => {
-    const direction = (event as any).direction || sessionStorage.getItem('nav-direction')
-    if (direction) {
-      document.documentElement.dataset.astroTransition = direction
-      sessionStorage.removeItem('nav-direction')
-    }
-  })
-
-  // Handle clicks on links with data-direction
-  document.addEventListener('click', (e) => {
-    const target = (e.target as HTMLElement).closest('a')
-    if (target && target.dataset.astroTransition) {
-      e.preventDefault()
-      sessionStorage.setItem('nav-direction', target.dataset.astroTransition)
-      navigate(target.href)
-    }
-  })
-</script>
