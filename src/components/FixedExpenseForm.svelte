@@ -10,10 +10,8 @@
   export let amount = ''
   export let frequency = 'monthly'
   export let currency = 'THB'
-  export let perMonth = false
   export let onSave = () => {}
   export let onCancel = () => {}
-  export let onDelete = null
   export let dragHandleProps = null
 
   let labelInput = null

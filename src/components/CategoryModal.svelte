@@ -92,24 +92,37 @@
 
   {#if isAdding}
     <div class="border-border mb-4 border-b pb-4">
-      <div class="grid grid-cols-2 gap-3">
-        <Input placeholder="Category name" bind:value={label} />
-        <Input
-          type="text"
-          placeholder="Default amount"
-          bind:value={defaultAmount}
-          formatAsNumber={true}
-        />
-      </div>
-      <div class="mt-3 flex gap-2">
-        <Button size="sm" on:click={handleAdd}>
-          <Check size={16} class="mr-1" />
-          Add
-        </Button>
-        <Button size="sm" variant="ghost" on:click={resetForm}>
-          <X size={16} class="mr-1" />
-          Cancel
-        </Button>
+      <div class="flex items-end gap-2">
+        <div class="flex-1">
+          <Input placeholder="Category name" bind:value={label} />
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="text-muted-foreground text-sm select-none">{currencySymbol}</div>
+          <div class="w-32">
+            <Input
+              type="text"
+              placeholder="Default amount"
+              bind:value={defaultAmount}
+              formatAsNumber={true}
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button
+            on:click={handleAdd}
+            class="text-success cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+            title="Add"
+          >
+            <Check size={16} />
+          </button>
+          <button
+            on:click={resetForm}
+            class="text-muted-foreground cursor-pointer p-1.5 opacity-70 hover:opacity-100"
+            title="Cancel"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
     </div>
   {/if}
@@ -121,54 +134,57 @@
       <div class="space-y-2">
         {#each categories as category (category.id)}
           {#if editingId === category.id}
-            <div class="border-border rounded-lg border p-3">
-              <div class="grid grid-cols-2 gap-3">
+            <div class="flex items-center gap-2 py-2">
+              <div class="flex-1">
                 <Input placeholder="Category name" bind:value={label} className="text-sm" />
-                <Input
-                  type="text"
-                  placeholder="Default amount"
-                  bind:value={defaultAmount}
-                  formatAsNumber={true}
-                  className="text-sm"
-                />
               </div>
-              <div class="mt-3 flex gap-2">
+              <div class="flex items-center gap-2">
+                <div class="text-muted-foreground text-sm select-none">{currencySymbol}</div>
+                <div class="w-32">
+                  <Input
+                    type="text"
+                    placeholder="Default amount"
+                    bind:value={defaultAmount}
+                    formatAsNumber={true}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <div class="flex items-center gap-1">
                 <button
                   on:click={() => handleUpdate(category.id)}
-                  class="text-sage-600 hover:bg-sage-100 dark:hover:bg-charcoal-800 rounded p-1"
+                  class="text-success cursor-pointer p-1.5 opacity-70 hover:opacity-100"
                 >
-                  <Check size={16} />
+                  <Check size={14} />
                 </button>
                 <button
                   on:click={resetForm}
-                  class="text-charcoal-500 hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-1"
+                  class="text-muted-foreground cursor-pointer p-1.5 opacity-70 hover:opacity-100"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </div>
             </div>
           {:else}
             <div
-              class="bg-accent/30 hover:bg-accent flex items-center justify-between rounded-lg p-3 transition-colors"
+              class="border-border flex items-center justify-between border-b py-3 transition-colors last:border-0"
             >
-              <div class="flex-1">
-                <div class="text-foreground text-sm font-medium">{category.label}</div>
-                <div class="text-muted-foreground text-xs">
-                  Default: {formatCurrency(category.default_amount || 0, currencySymbol)}
-                </div>
+              <div class="text-foreground flex-1 text-sm font-medium">{category.label}</div>
+              <div class="text-muted-foreground mr-4 text-sm">
+                {formatCurrency(category.default_amount || 0, currencySymbol)}
               </div>
               <div class="flex gap-1">
                 <button
                   on:click={() => startEdit(category)}
-                  class="hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-2"
+                  class="hover:bg-sand-200 dark:hover:bg-charcoal-800 p-1"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={14} />
                 </button>
                 <button
                   on:click={() => handleDelete(category.id)}
-                  class="text-terracotta-500 hover:bg-terracotta-100 dark:hover:bg-charcoal-800 rounded p-2"
+                  class="text-terracotta-500 hover:bg-terracotta-100 dark:hover:bg-charcoal-800 p-1"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
