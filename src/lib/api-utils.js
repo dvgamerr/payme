@@ -1,15 +1,7 @@
-/**
- * API Response Utilities
- * Standardized response handlers for consistent API responses
- */
-
 import logger from './logger.js'
 
 const jsonHeaders = { 'Content-Type': 'application/json' }
 
-/**
- * Create a successful JSON response
- */
 export const jsonSuccess = (data, status = 200) => {
   return new Response(JSON.stringify(data), {
     status,
@@ -17,9 +9,6 @@ export const jsonSuccess = (data, status = 200) => {
   })
 }
 
-/**
- * Create an error JSON response
- */
 export const jsonError = (message, status = 500) => {
   return new Response(JSON.stringify({ error: message }), {
     status,
@@ -27,9 +16,6 @@ export const jsonError = (message, status = 500) => {
   })
 }
 
-/**
- * Validate required fields in request body
- */
 export const validateRequired = (body, requiredFields) => {
   const missing = []
 
@@ -44,9 +30,6 @@ export const validateRequired = (body, requiredFields) => {
   }
 }
 
-/**
- * Parse and validate integer parameter
- */
 export const parseIntParam = (param, paramName = 'parameter') => {
   const parsed = parseInt(param)
   if (isNaN(parsed)) {
@@ -55,9 +38,6 @@ export const parseIntParam = (param, paramName = 'parameter') => {
   return parsed
 }
 
-/**
- * Verify resource ownership
- */
 export const verifyOwnership = (resource, userId, resourceName = 'Resource') => {
   if (!resource) {
     throw new Error(`${resourceName} not found`)
@@ -67,9 +47,6 @@ export const verifyOwnership = (resource, userId, resourceName = 'Resource') => 
   }
 }
 
-/**
- * Handle API request with consistent error handling
- */
 export const handleApiRequest = async (handler, cookies) => {
   try {
     return await handler()
@@ -98,9 +75,6 @@ export const handleApiRequest = async (handler, cookies) => {
   }
 }
 
-/**
- * Set session cookie with standard options
- */
 export const setSessionCookie = (cookies, sessionId, expiresAt) => {
   cookies.set('session_id', sessionId, {
     path: '/',
@@ -111,9 +85,6 @@ export const setSessionCookie = (cookies, sessionId, expiresAt) => {
   })
 }
 
-/**
- * Transform database row to camelCase API response
- */
 export const toCamelCase = (obj) => {
   const result = {}
   for (const [key, value] of Object.entries(obj)) {
@@ -123,9 +94,6 @@ export const toCamelCase = (obj) => {
   return result
 }
 
-/**
- * Transform camelCase request to snake_case for database
- */
 export const toSnakeCase = (obj) => {
   const result = {}
   for (const [key, value] of Object.entries(obj)) {

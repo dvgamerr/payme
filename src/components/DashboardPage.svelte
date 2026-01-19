@@ -34,7 +34,6 @@
     'Dec',
   ]
 
-  let savings = 0
   let showVarianceModal = false
   let summary = null
   let categories = []
@@ -46,48 +45,37 @@
     await loadData()
   })
 
-  async function loadData() {
-    try {
-      loading = true
+  const loadData = async () => {
+    loading = true
 
-      // Load categories
-      categories = await api.categories.list()
+    // Load categories
+    categories = await api.categories.list()
+    const monthIndex = MONTH_NAMES.findIndex((m) => m.toLowerCase() === month?.toLowerCase())
 
-      // Determine which month to load
-      if (year && month) {
-        // Get or create month by (year, month)
-        const monthIndex = MONTH_NAMES.findIndex((m) => m.toLowerCase() === month.toLowerCase())
-
-        if (monthIndex !== -1) {
-          const result = await api.months.create(parseInt(year), monthIndex + 1)
-          console.log(JSON.stringify({ result }))
-          if (result && result.month) {
-            selectedMonthId = result.month.id
-            const now = new Date()
-            isCurrentMonth =
-              result.month.year === now.getFullYear() && result.month.month === now.getMonth() + 1
-            await loadMonthSummary(result.month.id)
-          } else {
-            // Invalid response, use current month
-            await loadCurrentMonth()
-          }
-        } else {
-          // Invalid month name, use current month
-          await loadCurrentMonth()
-        }
-      } else {
-        // No year/month specified, use current month
-        await loadCurrentMonth()
-      }
-    } catch (err) {
-      console.error('Error loading data:', err)
-    } finally {
+    console.log({ year, month, monthIndex })
+    if (!year || !month || monthIndex < 0) {
+      await loadCurrentMonth()
       loading = false
+      return
     }
+
+    const result = await api.months.create(parseInt(year), monthIndex + 1)
+    if (result && result.month) {
+      selectedMonthId = result.month.id
+      const now = new Date()
+      isCurrentMonth =
+        result.month.year === now.getFullYear() && result.month.month === now.getMonth() + 1
+      await loadMonthSummary(result.month.id)
+    } else {
+      // Invalid response, use current month
+      await loadCurrentMonth()
+    }
+    loading = false
   }
 
   async function loadCurrentMonth() {
     const month = await api.months.current()
+    console.log({ ...month })
     if (!month || !month.id) {
       console.error('Failed to get current month:', month)
       return
@@ -98,7 +86,7 @@
 
   async function loadMonthSummary(monthId) {
     if (!monthId) {
-      console.error('loadMonthSummary called with invalid monthId:', monthId)
+      console.error('invalid monthId:', monthId)
       return
     }
 
@@ -123,6 +111,7 @@
 
       const totalSpent = items.reduce((sum, i) => sum + i.amount, 0)
 
+      month.remaining = month.remaining + totalFixed
       summary = {
         ...month,
         items,

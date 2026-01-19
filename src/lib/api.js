@@ -1,6 +1,6 @@
 const BASE_URL = '/api'
 
-async function request(endpoint, options = {}) {
+const request = async (endpoint, options = {}) => {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: {

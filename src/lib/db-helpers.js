@@ -1,8 +1,3 @@
-/**
- * Database Helper Functions
- * Reusable database operations and query helpers
- */
-
 import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import logger from './logger.js'
 import { db, schema } from './db.js'
@@ -17,9 +12,6 @@ const {
   months,
 } = schema
 
-/**
- * Get comprehensive month summary with all related data
- */
 export const getMonthSummary = async (monthId, userId) => {
   const monthRows = await db
     .select({
@@ -123,9 +115,6 @@ export const getMonthSummary = async (monthId, userId) => {
   }
 }
 
-/**
- * Get month by ID and verify ownership
- */
 export const getMonthByIdForUser = async (monthId, userId) => {
   const rows = await db
     .select({
@@ -153,9 +142,6 @@ export const getMonthByIdForUser = async (monthId, userId) => {
   return month
 }
 
-/**
- * Get category by ID and verify ownership
- */
 export const getCategoryByIdForUser = async (categoryId, userId) => {
   const rows = await db
     .select({
@@ -181,9 +167,6 @@ export const getCategoryByIdForUser = async (categoryId, userId) => {
   return category
 }
 
-/**
- * Execute database operation with transaction support
- */
 export const withTransaction = async (callback) => {
   try {
     const result = await callback(db)
@@ -195,9 +178,6 @@ export const withTransaction = async (callback) => {
   }
 }
 
-/**
- * Get next display order for user's items
- */
 export const getNextDisplayOrder = async (table, userId) => {
   const { desc } = await import('drizzle-orm')
 
@@ -211,9 +191,6 @@ export const getNextDisplayOrder = async (table, userId) => {
   return rows[0]?.maxOrder ? rows[0].maxOrder + 1 : 0
 }
 
-/**
- * Check if resource exists and belongs to user
- */
 export const verifyResourceOwnership = async (
   table,
   resourceId,
@@ -239,9 +216,6 @@ export const verifyResourceOwnership = async (
   return resource
 }
 
-/**
- * Get fixed_months by monthId
- */
 export const getFixedMonthsByMonthId = async (monthId, userId) => {
   const fixedMonthsRows = await db
     .select({
@@ -261,9 +235,6 @@ export const getFixedMonthsByMonthId = async (monthId, userId) => {
   return fixedMonthsRows
 }
 
-/**
- * Copy fixed_expenses to fixed_months for a specific month
- */
 export const copyFixedExpensesToMonth = async (monthId, userId) => {
   const existingFixedExpenses = await db
     .select({
@@ -297,9 +268,6 @@ export const copyFixedExpensesToMonth = async (monthId, userId) => {
   }
 }
 
-/**
- * Verify fixed_month ownership
- */
 export const verifyFixedMonthOwnership = async (fixedMonthId, userId) => {
   const rows = await db
     .select({ id: fixedMonths.id, user_id: fixedMonths.userId })

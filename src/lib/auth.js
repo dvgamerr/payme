@@ -8,19 +8,19 @@ const { sessions, users } = schema
 const SALT_ROUNDS = 10
 const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 days
 
-function generateSessionId() {
+const generateSessionId = () => {
   return crypto.randomUUID()
 }
 
-export async function hashPassword(password) {
+export const hashPassword = async (password) => {
   return await bcrypt.hash(password, SALT_ROUNDS)
 }
 
-export async function verifyPassword(password, hash) {
+export const verifyPassword = async (password, hash) => {
   return await bcrypt.compare(password, hash)
 }
 
-export async function createSession(userId) {
+export const createSession = async (userId) => {
   const sessionId = generateSessionId()
   const expiresAt = new Date(Date.now() + SESSION_DURATION).toISOString()
 
@@ -33,7 +33,7 @@ export async function createSession(userId) {
   return { sessionId, expiresAt }
 }
 
-export async function getUserFromSession(sessionId) {
+export const getUserFromSession = async (sessionId) => {
   if (!sessionId) return null
 
   const rows = await db
@@ -51,11 +51,11 @@ export async function getUserFromSession(sessionId) {
   return rows[0] ?? null
 }
 
-export async function deleteSession(sessionId) {
+export const deleteSession = async (sessionId) => {
   await db.delete(sessions).where(eq(sessions.id, sessionId))
 }
 
-export async function cleanupExpiredSessions() {
+export const cleanupExpiredSessions = async () => {
   const deleted = await db
     .delete(sessions)
     .where(lte(sessions.expiresAt, nowSql))
@@ -65,7 +65,7 @@ export async function cleanupExpiredSessions() {
   }
 }
 
-export async function registerUser(username, password) {
+export const registerUser = async (username, password) => {
   const passwordHash = await hashPassword(password)
 
   try {
@@ -86,7 +86,7 @@ export async function registerUser(username, password) {
   }
 }
 
-export async function loginUser(username, password) {
+export const loginUser = async (username, password) => {
   const rows = await db
     .select({
       id: users.id,
