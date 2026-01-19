@@ -1,5 +1,5 @@
 <script>
-  import { Plus, Trash2, Edit2, Check, X } from 'lucide-svelte'
+  import { Plus, Trash2, Edit2, Check, X, Settings } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import { formatCurrency } from '../lib/format-utils.js'
@@ -7,12 +7,15 @@
   import Input from './ui/Input.svelte'
   import Select from './ui/Select.svelte'
   import Button from './ui/Button.svelte'
+  import CategoryModal from './CategoryModal.svelte'
 
   export let monthId
   export let items = []
   export let categories = []
   export let isReadOnly = false
   export let onUpdate = () => {}
+
+  let showCategoryModal = false
 
   let isAdding = false
   let editingId = null
@@ -75,17 +78,27 @@
   <div class="mb-4 flex items-center justify-between">
     <h3 class="text-foreground text-sm font-semibold">Transactions</h3>
     {#if !isReadOnly && !isAdding}
-      <button
-        on:click={() => {
-          isAdding = true
-          if (categories.length > 0) {
-            categoryId = categories[0].id.toString()
-          }
-        }}
-        class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-      >
-        <Plus size={16} />
-      </button>
+      <div class="flex gap-1">
+        <button
+          on:click={() => (showCategoryModal = true)}
+          class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          title="Manage categories"
+        >
+          <Settings size={16} />
+        </button>
+        <button
+          on:click={() => {
+            isAdding = true
+            if (categories.length > 0) {
+              categoryId = categories[0].id.toString()
+            }
+          }}
+          class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
+          title="Add transaction"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
     {/if}
   </div>
 
@@ -226,3 +239,5 @@
     </table>
   </div>
 </Card>
+
+<CategoryModal bind:open={showCategoryModal} {categories} {onUpdate} />

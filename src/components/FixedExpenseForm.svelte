@@ -10,6 +10,7 @@
   export let amount = ''
   export let frequency = 'monthly'
   export let currency = 'THB'
+  export let perMonth = false
   export let onSave = () => {}
   export let onCancel = () => {}
   export let onDelete = null
@@ -109,19 +110,27 @@
       on:keydown={handleKeyDown}
     />
   </div>
-  <div class="w-17">
-    <Input
-      type="text"
-      placeholder="Amount"
-      bind:value={amount}
-      bind:this={amountInput}
-      formatAsNumber={true}
-      on:keydown={handleKeyDown}
-    />
+
+  <!-- Combined Amount + Currency Field -->
+  <div class="w-36">
+    <div class=" flex items-center bg-transparent">
+      <div class="text-muted-foreground mr-2 text-sm select-none">
+        {currency === 'THB' ? '฿' : currency === 'USD' ? '$' : '€'}
+      </div>
+      <Input
+        type="text"
+        placeholder="Amount"
+        bind:value={amount}
+        bind:this={amountInput}
+        formatAsNumber={true}
+        on:keydown={handleKeyDown}
+      />
+      <div class="grid w-14 shrink-0 grid-cols-1 focus-within:relative">
+        <Select bind:value={currency} options={currencyOptions} />
+      </div>
+    </div>
   </div>
-  <div class="w-16">
-    <Select bind:value={currency} options={currencyOptions} />
-  </div>
+
   <div class="flex items-end">
     <span
       class="placeholder:text-muted-foreground mx-1 bg-transparent py-2 text-left text-sm capitalize transition-colors focus:outline-none"
@@ -136,6 +145,7 @@
       ]}
     />
   </div>
+
   <div class="flex items-center gap-1">
     <button
       on:click={onSave}
@@ -151,14 +161,5 @@
     >
       <X size={16} />
     </button>
-    <!-- {#if mode === 'edit' && onDelete}
-      <button
-        on:click={onDelete}
-        class="text-destructive cursor-pointer p-1.5 opacity-70 hover:opacity-100"
-        title="ลบ"
-      >
-        <Trash2 size={16} />
-      </button>
-    {/if} -->
   </div>
 </div>
