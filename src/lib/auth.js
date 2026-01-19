@@ -56,12 +56,12 @@ export const deleteSession = async (sessionId) => {
 }
 
 export const cleanupExpiredSessions = async () => {
-  const deleted = await db
-    .delete(sessions)
-    .where(lte(sessions.expiresAt, nowSql))
-    .returning({ id: sessions.id })
-  if (deleted.length > 0) {
-    logger.info({ count: deleted.length }, 'Cleaned up expired sessions')
+  // drizzle-orm sqlite ไม่รองรับ .returning()
+  const result = await db.delete(sessions).where(lte(sessions.expiresAt, nowSql))
+  // result.changes (sqlite), result.rowCount (pg)
+  const count = result?.changes ?? result?.rowCount ?? 0
+  if (count > 0) {
+    logger.info({ count }, 'Cleaned up expired sessions')
   }
 }
 
