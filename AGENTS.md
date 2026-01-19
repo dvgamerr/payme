@@ -37,15 +37,42 @@
 
 ### 3. ส่วนประกอบ UI (UI Components)
 
-- **Basic UI**: Button, Card, Input, Select, Modal, ProgressBar
-- **Complex UI**:
-  - `Summary.svelte`: การ์ดแสดงสรุปยอดเงิน 4 ด้าน
-  - `MonthNav.svelte`: แถบนำทางเลือกเดือน
-  - `IncomeSection.svelte`: จัดการรายการรายรับ
-  - `FixedExpenses.svelte`: จัดการรายจ่ายคงที่
-  - `BudgetSection.svelte`: จัดการงบประมาณรายหมวดหมู่
-  - `ItemsSection.svelte`: ตารางบันทึกรายจ่าย พร้อมแก้ไขแบบ Inline
-  - `Stats.svelte`: หน้าต่างแสดงกราฟสถิติและแนวโน้ม
+**หลักการสำคัญ: ใช้ Component ที่มีอยู่แล้วก่อนเสมอ**
+
+ก่อนสร้าง UI component ใหม่ ต้อง**ตรวจสอบ `src/components/ui/` ก่อน** เพื่อใช้ component ที่มีอยู่แล้ว ช่วยให้:
+
+- ✅ UI สอดคล้องกันทั้งระบบ (Consistency)
+- ✅ ลดโค้ดซ้ำซ้อน (DRY Principle)
+- ✅ ง่ายต่อการดูแลรักษา (Maintainability)
+- ✅ มี Theme support (Dark/Light Mode) ในตัว
+
+#### Basic UI Components (`src/components/ui/`)
+
+- `Summary.svelte`: การ์ดแสดงสรุปยอดเงิน 4 ด้าน
+- `MonthNav.svelte`: แถบนำทางเลือกเดือน
+- `IncomeSection.svelte`: จัดการรายการรายรับ
+- `FixedExpenses.svelte`: จัดการรายจ่ายคงที่
+- `BudgetSection.svelte`: จัดการงบประมาณรายหมวดหมู่
+- `ItemsSection.svelte`: ตารางบันทึกรายจ่าย พร้อมแก้ไขแบบ Inline
+- `CategoryModal.svelte`: Modal จัดการ categories (CRUD)
+- `Stats.svelte`: หน้าต่างแสดงกราฟสถิติและแนวโน้ม
+
+#### UI Development Guidelines
+
+**DO ✅:**
+
+- ใช้ Basic UI Components จาก `src/components/ui/` เสมอ
+- ตรวจสอบ props ที่มีก่อนใช้งาน
+- ใช้ `bind:value` สำหรับ two-way binding
+- ใช้ `on:event` สำหรับ event handling
+- ส่ง `$$restProps` ต่อเมื่อต้องการ flexibility
+
+**DON'T ❌:**
+
+- สร้าง `<input>` หรือ `<button>` ใหม่เอง (ใช้ `Input.svelte` และ `Button.svelte` แทน)
+- สร้าง modal/dialog ใหม่ (ใช้ `Modal.svelte`)
+- เขียน inline styles ซ้ำๆ (ใช้ Tailwind classes หรือสร้าง component ใหม่)
+- ลืมเช็ค theme support (ใช้ Tailwind color tokens: `text-foreground`, `bg-background`, etc.)
 
 ### 4. ระบบจัดการข้อมูล (Data Management)
 
