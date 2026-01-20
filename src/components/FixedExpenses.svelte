@@ -1,5 +1,5 @@
 <script>
-  import { Plus, GripVertical } from 'lucide-svelte'
+  import { Plus, GripVertical, Trash2, Check } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import { formatCurrency } from '../lib/format-utils.js'
@@ -14,6 +14,7 @@
 
   let isAdding = false
   let editingId = null
+  let pendingDelete = null
   let label = ''
   let amount = ''
   let frequency = 'monthly'
@@ -85,13 +86,23 @@
   }
 
   async function handleDelete(id) {
-    // await api.fixedExpenses.delete(id)
-    // onUpdate()
+    await api.fixedExpenses.delete(id)
+    pendingDelete = null
+    onUpdate()
+  }
+
+  function startDelete(id) {
+    pendingDelete = id
+  }
+
+  function cancelDelete() {
+    pendingDelete = null
   }
 
   function startEdit(expense) {
     isAdding = false
     editingId = expense.id
+    pendingDelete = null
     label = expense.label
     amount = expense.amount.toString()
     frequency = expense.frequency || 'monthly'
@@ -109,6 +120,7 @@
 
   function startAdd() {
     cancelEdit()
+    pendingDelete = null
     isAdding = true
   }
 
@@ -141,7 +153,7 @@
     </button>
   </div>
 
-  <div class="min-h-[200px] space-y-0">
+  <div class="min-h-50 space-y-0">
     <div
       use:dndzone={{
         items,
@@ -157,7 +169,7 @@
         {@const expense = item.data}
         <div
           animate:flip={{ duration: flipDurationMs }}
-          class="flex items-center justify-between outline-none focus:outline-none"
+          class="group flex items-center justify-between outline-none focus:outline-none"
         >
           {#if editingId === expense.id}
             <FixedExpenseForm
@@ -168,13 +180,12 @@
               bind:currency
               onSave={() => handleUpdate(expense.id)}
               onCancel={cancelEdit}
-              onDelete={() => handleDelete(expense.id)}
             />
           {:else}
             <button
               on:click={() => startEdit(expense)}
               class="text-foreground hover:bg-muted flex flex-1 items-center justify-between rounded-[0.5em] py-2 text-left text-sm
-              {editingId || isAdding ? 'pl-4' : ''}"
+              {editingId || isAdding ? 'pr-3 pl-4' : 'px-3'}"
             >
               {#if !editingId && !isAdding}
                 <div
@@ -193,6 +204,31 @@
                 {formatCurrency(getMonthlyAmount(expense), currencySymbol)}
               </span>
             </button>
+            <div class="relative">
+              {#if pendingDelete === expense.id}
+                <span
+                  class="bg-destructive text-destructive-foreground absolute top-1/2 right-full mr-2 -translate-y-1/2 rounded px-2 py-1 text-xs font-medium whitespace-nowrap"
+                >
+                  Confirm?
+                </span>
+                <button
+                  on:click={() => handleDelete(expense.id)}
+                  on:mouseleave={cancelDelete}
+                  class="text-destructive hover:bg-accent cursor-pointer rounded-lg
+p-1 transition-all"
+                >
+                  <Check size={14} />
+                </button>
+              {:else}
+                <button
+                  on:click={() => startDelete(expense.id)}
+                  class="text-destructive hover:bg-accent cursor-pointer rounded-lg p-1 opacity-0
+transition-opacity group-hover:opacity-90"
+                >
+                  <Trash2 size={14} />
+                </button>
+              {/if}
+            </div>
           {/if}
         </div>
       {/each}

@@ -12,6 +12,7 @@
   export let currency = 'THB'
   export let onSave = () => {}
   export let onCancel = () => {}
+  export let onDelete = () => {}
   export let dragHandleProps = null
 
   let labelInput = null
