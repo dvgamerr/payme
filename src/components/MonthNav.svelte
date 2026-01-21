@@ -19,10 +19,8 @@
     'Dec',
   ]
 
-  console.log({ year, month })
-
   // Determine current year/month from props or current date
-  $: currentYear = year || new Date().getFullYear()
+  $: currentYear = year || new Date().getFullYear().toString()
   $: currentMonth =
     (month
       ? MONTH_NAMES.findIndex((m) => m.toLowerCase() === month?.toLowerCase())
@@ -52,10 +50,6 @@
       nextMonth = 1
       nextYear++
     }
-
-    // Check if it's current month
-    const now = new Date()
-    const isCurrent = nextYear === now.getFullYear() && nextMonth === now.getMonth() + 1
 
     const link = document.createElement('a')
     link.href = `/${nextYear}/${MONTH_NAMES[nextMonth - 1]}`

@@ -128,6 +128,11 @@ export const api = {
       }),
     delete: (monthId, incomeId) =>
       request(`/months/${monthId}/income/${incomeId}`, { method: 'DELETE' }),
+    reorder: (monthId, order) =>
+      request(`/months/${monthId}/income/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
   },
 
   items: {

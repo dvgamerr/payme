@@ -5,10 +5,10 @@ import { resolve } from 'path'
 const db = new Database('./payme.db')
 
 // Read the latest migration file
-const migrationFile = resolve('./drizzle/0004_dark_leo.sql')
+const migrationFile = resolve('./drizzle/0005_calm_midnight.sql')
 const migration = readFileSync(migrationFile, 'utf-8')
 
-console.log('Applying migration: 0004_dark_leo.sql')
+console.log('Applying migration: 0005_calm_midnight.sql')
 console.log('SQL:', migration)
 
 try {

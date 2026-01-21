@@ -110,6 +110,7 @@ export const incomeEntries = sqliteTable(
       .references(() => months.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     amount: real('amount').notNull(),
+    displayOrder: integer('display_order').notNull().default(0),
   },
   (table) => ({
     byMonth: index('idx_income_month').on(table.monthId),

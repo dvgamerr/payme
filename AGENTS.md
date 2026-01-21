@@ -17,7 +17,11 @@
 
 ---
 
-## ✅ ฟีเจอร์หลัก (Key Features)
+## สิ่งสำคัญที่ห้ามลืมในการทำงาน
+
+- ทบทวนคำสั่งเสมอ เพื่อเช็คว่าลืมทำอะไรไป หรือไม่
+
+## ฟีเจอร์หลัก (Key Features)
 
 ### 1. โครงสร้างพื้นฐาน (Infrastructure)
 
@@ -41,10 +45,10 @@
 
 ก่อนสร้าง UI component ใหม่ ต้อง**ตรวจสอบ `src/components/ui/` ก่อน** เพื่อใช้ component ที่มีอยู่แล้ว ช่วยให้:
 
-- ✅ UI สอดคล้องกันทั้งระบบ (Consistency)
-- ✅ ลดโค้ดซ้ำซ้อน (DRY Principle)
-- ✅ ง่ายต่อการดูแลรักษา (Maintainability)
-- ✅ มี Theme support (Dark/Light Mode) ในตัว
+- UI สอดคล้องกันทั้งระบบ (Consistency)
+- ลดโค้ดซ้ำซ้อน (DRY Principle)
+- ง่ายต่อการดูแลรักษา (Maintainability)
+- มี Theme support (Dark/Light Mode) ในตัว
 
 #### Basic UI Components (`src/components/ui/`)
 
@@ -219,17 +223,17 @@ Prettier Configuration (ตัวอย่าง)
 
 เมื่อสร้าง endpoint ใหม่ ต้องตรวจสอบ:
 
-- [ ] ✅ ใช้ `export const` แทน `export async function`
-- [ ] ✅ ใช้ arrow function `= async () =>`
-- [ ] ✅ ใช้ `handleApiRequest` wrap ทุก handler
-- [ ] ✅ ใช้ `requireAuth` สำหรับ protected endpoints
-- [ ] ✅ ใช้ `validateRequired` สำหรับ validation
-- [ ] ✅ ใช้ `parseIntParam` สำหรับ integer parameters
-- [ ] ✅ ใช้ `jsonSuccess` หรือ `jsonError` สำหรับ response
-- [ ] ✅ ใช้ helper functions จาก `db-helpers.js` สำหรับ ownership verification
-- [ ] ✅ **ห้าม** เขียน try-catch เอง
-- [ ] ✅ **ห้าม** เขียน `new Response(JSON.stringify(...))` เอง
-- [ ] ✅ ผ่าน `bun run format` และ `bun run lint`
+- ใช้ `export const` แทน `export async function`
+- ใช้ arrow function `= async () =>`
+- ใช้ `handleApiRequest` wrap ทุก handler
+- ใช้ `requireAuth` สำหรับ protected endpoints
+- ใช้ `validateRequired` สำหรับ validation
+- ใช้ `parseIntParam` สำหรับ integer parameters
+- ใช้ `jsonSuccess` หรือ `jsonError` สำหรับ response
+- ใช้ helper functions จาก `db-helpers.js` สำหรับ ownership verification
+- **ห้าม** เขียน try-catch เอง
+- **ห้าม** เขียน `new Response(JSON.stringify(...))` เอง
+- ผ่าน `bun run format` และ `bun run lint`
 
 ### Quick Reference
 

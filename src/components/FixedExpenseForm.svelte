@@ -1,9 +1,10 @@
 <script>
-  import { Trash2, Check, X, GripVertical } from 'lucide-svelte'
+  import { GripVertical } from 'lucide-svelte'
   import { settings } from '../stores/settings'
   import Input from './ui/Input.svelte'
   import Toggle from './ui/Toggle.svelte'
   import Select from './ui/Select.svelte'
+  import SaveButtons from './ui/SaveButtons.svelte'
 
   export let mode = 'add'
   export let label = ''
@@ -12,7 +13,6 @@
   export let currency = 'THB'
   export let onSave = () => {}
   export let onCancel = () => {}
-  export let onDelete = () => {}
   export let dragHandleProps = null
 
   let labelInput = null
@@ -145,20 +145,5 @@
     />
   </div>
 
-  <div class="flex items-center gap-1">
-    <button
-      on:click={onSave}
-      class="text-success hover:bg-accent my-1.5 cursor-pointer rounded-lg p-1 opacity-70 transition-colors hover:opacity-100"
-      title="บันทึก"
-    >
-      <Check size={16} />
-    </button>
-    <button
-      on:click={onCancel}
-      class="text-muted-foreground hover:bg-accent my-1.5 cursor-pointer rounded-lg p-1 opacity-70 transition-colors hover:opacity-100"
-      title="ยกเลิก"
-    >
-      <X size={16} />
-    </button>
-  </div>
+  <SaveButtons {onSave} {onCancel} />
 </div>

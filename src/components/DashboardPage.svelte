@@ -62,6 +62,7 @@
         console.error('Failed to get current month:', current)
         return
       }
+      selectedMonthId = current.id
       isCurrentMonth = true
       await loadMonthSummary(current.id)
 
@@ -161,6 +162,7 @@
           <IncomeSection
             monthId={selectedMonthId}
             entries={summary.income_entries}
+            totalIncome={summary.total_income}
             isReadOnly={summary.month.is_closed}
             onUpdate={refresh}
           />

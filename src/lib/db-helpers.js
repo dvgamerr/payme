@@ -37,9 +37,11 @@ export const getMonthSummary = async (monthId, userId) => {
       month_id: incomeEntries.monthId,
       label: incomeEntries.label,
       amount: incomeEntries.amount,
+      display_order: incomeEntries.displayOrder,
     })
     .from(incomeEntries)
     .where(eq(incomeEntries.monthId, monthId))
+    .orderBy(asc(incomeEntries.displayOrder))
 
   const fixed_expenses = await db
     .select({

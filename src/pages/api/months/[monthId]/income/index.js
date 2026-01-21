@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
 import { db, schema } from '../../../../../lib/db.js'
 import { requireAuth } from '../../../../../lib/middleware.js'
 import {
@@ -27,7 +27,7 @@ export const GET = async ({ params, cookies }) => {
       })
       .from(incomeEntries)
       .where(eq(incomeEntries.monthId, monthId))
-      .orderBy(asc(incomeEntries.id))
+      .orderBy(asc(incomeEntries.displayOrder))
 
     return jsonSuccess(entries)
   })
@@ -44,9 +44,17 @@ export const POST = async ({ params, request, cookies }) => {
 
     await getMonthByIdForUser(monthId, user.id)
 
+    const displayOrder = await db
+      .select({ maxOrder: incomeEntries.displayOrder })
+      .from(incomeEntries)
+      .where(eq(incomeEntries.monthId, monthId))
+      .orderBy(desc(incomeEntries.displayOrder))
+      .limit(1)
+      .then((rows) => (rows[0]?.maxOrder ? rows[0].maxOrder + 1 : 0))
+
     const rows = await db
       .insert(incomeEntries)
-      .values({ monthId, label, amount })
+      .values({ monthId, label, amount, displayOrder })
       .returning({ id: incomeEntries.id })
 
     const entry = {
