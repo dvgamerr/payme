@@ -21,10 +21,15 @@
   $: currencySymbol = $settings.currencySymbol || '฿'
   $: items = entries.map((entry) => ({ id: entry.id, data: entry }))
 
+  $: if (editingId && amountInput) {
+    amountInput.focus()
+  }
+
   let isAdding = false
   let editingId = null
   let label = ''
   let amount = ''
+  let amountInput = null
 
   async function handleAdd() {
     if (!label || !amount || !monthId) {
@@ -92,6 +97,17 @@
       await onUpdate()
     }
   }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      if (editingId) {
+        handleUpdate(editingId)
+      } else if (isAdding) {
+        handleAdd()
+      }
+    }
+  }
 </script>
 
 <Card>
@@ -128,10 +144,22 @@
           {#if editingId === entry.id}
             <div class="flex flex-1 items-end gap-2 pl-4">
               <div class="flex-1">
-                <Input placeholder="Label" bind:value={label} />
+                <Input placeholder="Label" bind:value={label} on:keydown={handleKeyDown} />
               </div>
-              <div class="w-36">
-                <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
+              <div class="w-26">
+                <div class="flex items-center bg-transparent">
+                  <div class="text-muted-foreground mr-2 text-sm select-none">
+                    {currencySymbol}
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Amount"
+                    bind:value={amount}
+                    bind:this={amountInput}
+                    formatAsNumber={true}
+                    on:keydown={handleKeyDown}
+                  />
+                </div>
               </div>
               <SaveButtons onSave={() => handleUpdate(entry.id)} onCancel={cancelEdit} />
             </div>
@@ -167,10 +195,21 @@
     {#if isAdding}
       <div class="flex items-end gap-2 pl-4">
         <div class="flex-1">
-          <Input placeholder="Label" bind:value={label} />
+          <Input placeholder="Label" bind:value={label} on:keydown={handleKeyDown} />
         </div>
         <div class="w-36">
-          <Input type="text" placeholder="Amount" bind:value={amount} formatAsNumber={true} />
+          <div class="flex items-center bg-transparent">
+            <div class="text-muted-foreground mr-2 text-sm select-none">
+              {currencySymbol}
+            </div>
+            <Input
+              type="text"
+              placeholder="Amount"
+              bind:value={amount}
+              formatAsNumber={true}
+              on:keydown={handleKeyDown}
+            />
+          </div>
         </div>
         <SaveButtons onSave={handleAdd} onCancel={cancelEdit} />
       </div>

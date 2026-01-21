@@ -14,6 +14,7 @@
   export let value = ''
   export let placeholder = ''
   export let formatAsNumber = false
+  export let textAlign = 'left'
 
   let inputId = `input-${Math.random().toString(36).substr(2, 9)}`
   let displayValue = ''
@@ -139,6 +140,7 @@
     on:focus
     on:keydown
     class="border-border placeholder:text-muted-foreground focus:border-foreground w-full border-b bg-transparent px-0 py-2 text-sm transition-colors focus:outline-none"
+    style="text-align: {textAlign}"
     {...$$restProps}
   />
 </div>
