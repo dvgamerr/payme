@@ -138,7 +138,7 @@
                 </span>
                 {#if !isReadOnly}
                   <button
-                    on:click={() => startEditBudget(budget)}
+                    on:dblclick={() => startEditBudget(budget)}
                     class="hover:bg-accent rounded p-1"
                   >
                     <Pen size={12} />
@@ -196,7 +196,7 @@
                 {formatCurrency(cat.default_amount, currencySymbol)} default
               </span>
               <button
-                on:click={() => startEditCategory(cat)}
+                on:dblclick={() => startEditCategory(cat)}
                 class="p-1 opacity-70 hover:opacity-100"
               >
                 <Pen size={14} />

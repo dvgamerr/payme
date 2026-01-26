@@ -251,8 +251,9 @@
       {#each items as item (item.id)}
         <tr
           class="hover:bg-accent/50 transition-colors last:border-0 {editingId !== item.id
-            ? 'border-border border-b '
+            ? 'border-border cursor-pointer border-b'
             : ''}"
+          on:dblclick={() => !isReadOnly && !isAdding && !editingId && startEdit(item)}
         >
           {#if editingId === item.id}
             <td class="py-1">
@@ -307,16 +308,9 @@
             <td class="text-foreground py-3 text-right text-sm font-medium">
               {formatCurrency(item.amount, currencySymbol)}
             </td>
-            {#if !isReadOnly}
+            {#if !isReadOnly && editingId !== item.id}
               <td class="py-2">
-                <div class="flex justify-end gap-1">
-                  <button
-                    on:click={() => startEdit(item)}
-                    class="hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-1"
-                    disabled={isAdding || editingId}
-                  >
-                    <Pen size={14} />
-                  </button>
+                <div class="flex justify-center">
                   <div class="relative">
                     <button
                       on:click|stopPropagation={() => toggleDropdown(item.id)}
@@ -333,7 +327,18 @@
                           on:click={() => openMoveModal(item)}
                           class="hover:bg-accent text-foreground block w-full px-4 py-2 text-left text-xs"
                         >
-                          Move to month...
+                          Move
+                        </button>
+                        <button
+                          on:click={() => {
+                            if (confirm('Are you sure you want to delete this transaction?')) {
+                              handleDelete(item.id)
+                            }
+                            closeDropdown()
+                          }}
+                          class="hover:bg-destructive/10 text-destructive block w-full px-4 py-2 text-left text-xs"
+                        >
+                          Delete
                         </button>
                       </div>
                     {/if}

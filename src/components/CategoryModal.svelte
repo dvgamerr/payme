@@ -163,7 +163,7 @@
             </div>
             <div class="flex gap-1">
               <button
-                on:click={() => startEdit(category)}
+                on:dblclick={() => startEdit(category)}
                 class="hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-1"
                 disabled={isAdding || editingId}
               >

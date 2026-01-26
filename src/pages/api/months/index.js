@@ -9,40 +9,53 @@ const { months, budgetCategories } = schema
 export const GET = async ({ cookies, url }) => {
   return handleApiRequest(async () => {
     const user = await requireAuth(cookies)
-    const year = parseIntParam(url.searchParams.get('year'), 'year')
-    const month = parseIntParam(url.searchParams.get('month'), 'month')
+    const userId = user.id
+
+    const yearParam = url.searchParams.get('year')
+    const monthParam = url.searchParams.get('month')
+
+    // If no year/month provided, return all months for the user
+    if (!yearParam || !monthParam) {
+      const allMonths = await db
+        .select()
+        .from(months)
+        .where(eq(months.userId, userId))
+        .orderBy(desc(months.year), desc(months.month))
+        .all()
+      return jsonSuccess(allMonths)
+    }
+
+    const year = parseIntParam(yearParam, 'year')
+    const month = parseIntParam(monthParam, 'month')
 
     if (month < 1 || month > 12) {
       throw new Error('Month must be between 1 and 12')
     }
     // If year and month provided, get or create that specific month
 
-    const userId = user.id
-    if (year && month) {
-      // Try to find existing month
-      const existingMonth = await db
-        .select()
-        .from(months)
-        .where(and(eq(months.userId, userId), eq(months.year, year), eq(months.month, month)))
-        .get()
+    // Try to find existing month
+    const existingMonth = await db
+      .select()
+      .from(months)
+      .where(and(eq(months.userId, userId), eq(months.year, year), eq(months.month, month)))
+      .get()
 
-      if (existingMonth) {
-        return jsonSuccess(existingMonth)
-      }
-
-      // Create new month
-      const newMonth = await db
-        .insert(months)
-        .values({
-          userId,
-          year,
-          month,
-          isClosed: 0,
-        })
-        .returning()
-        .get()
-
-      return jsonSuccess(newMonth, 201)
+    if (existingMonth) {
+      return jsonSuccess(existingMonth)
     }
+
+    // Create new month
+    const newMonth = await db
+      .insert(months)
+      .values({
+        userId,
+        year,
+        month,
+        isClosed: 0,
+      })
+      .returning()
+      .get()
+
+    return jsonSuccess(newMonth, 201)
   })
 }

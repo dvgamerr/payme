@@ -74,7 +74,7 @@
         {formatCurrency(savings, currencySymbol)}
       </span>
       <button
-        on:click={startEdit}
+        on:dblclick={startEdit}
         class="hover:bg-sand-200 dark:hover:bg-charcoal-700 rounded p-0.5 transition-colors"
       >
         <Pencil size={12} class="text-charcoal-400" />

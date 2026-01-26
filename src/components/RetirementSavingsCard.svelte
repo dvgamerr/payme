@@ -69,7 +69,7 @@
             {formatCurrency(amount, currencySymbol)}
           </span>
           <button
-            on:click={startEdit}
+            on:dblclick={startEdit}
             class="hover:bg-sand-200 dark:hover:bg-charcoal-700 p-1 transition-colors"
           >
             <Pencil size={14} class="text-charcoal-400" />

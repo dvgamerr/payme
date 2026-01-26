@@ -172,7 +172,7 @@
             />
           {:else}
             <button
-              on:click={() => startEdit(expense)}
+              on:dblclick={() => startEdit(expense)}
               class="text-foreground hover:bg-muted flex flex-1 items-center justify-between rounded-[0.5em] py-2 text-left text-sm
               {editingId || isAdding ? 'pr-3 pl-4' : 'px-3'}"
             >
