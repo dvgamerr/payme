@@ -1,5 +1,5 @@
 <script>
-  import { Plus, GripVertical, Pencil, Trash2, X, Check } from 'lucide-svelte'
+  import { Plus, GripVertical } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import { formatCurrency } from '../lib/format-utils.js'
@@ -7,7 +7,8 @@
   import { flip } from 'svelte/animate'
   import Card from './ui/Card.svelte'
   import Input from './ui/Input.svelte'
-  import Button from './ui/Button.svelte'
+  import SaveButtons from './ui/SaveButtons.svelte'
+  import DeleteButton from './ui/DeleteButton.svelte'
 
   export let monthId
   export let fixedExpenses = []
@@ -18,11 +19,16 @@
   let editingId = null
   let name = ''
   let amount = ''
+  let amountInput = null
 
   const flipDurationMs = 0
 
   $: currencySymbol = $settings.currencySymbol || '฿'
   $: items = fixedExpenses.map((exp) => ({ id: exp.id, data: exp }))
+
+  $: if (editingId && amountInput) {
+    amountInput.focus()
+  }
 
   async function handleAdd() {
     if (!name || !amount) return
@@ -49,10 +55,8 @@
   }
 
   async function handleDelete(id) {
-    if (confirm('Delete this fixed expense?')) {
-      await api.fixedMonths.delete(monthId, id)
-      onUpdate()
-    }
+    await api.fixedMonths.delete(monthId, id)
+    onUpdate()
   }
 
   function startEdit(expense) {
@@ -88,6 +92,20 @@
       onUpdate()
     }
   }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      if (editingId) {
+        handleUpdate(editingId)
+      } else if (isAdding) {
+        handleAdd()
+      }
+    } else if (event.key === 'Escape') {
+      event.preventDefault()
+      cancelEdit()
+    }
+  }
 </script>
 
 <Card>
@@ -101,7 +119,7 @@
     </button>
   </div>
 
-  <div class="min-h-[200px] space-y-0">
+  <div class="min-h-50 space-y-0">
     <div
       use:dndzone={{
         items,
@@ -120,49 +138,32 @@
           class="flex items-center justify-between outline-none focus:outline-none"
         >
           {#if editingId === expense.id}
-            <div class="-mx-3 flex w-full items-center gap-2 rounded-[0.5em] px-3 py-2">
-              <Input
-                type="text"
-                bind:value={name}
-                placeholder="Name"
-                class="flex-1 text-sm"
-                on:keydown={(e) => e.key === 'Enter' && handleUpdate(expense.id)}
-              />
-              <Input
-                type="number"
-                bind:value={amount}
-                placeholder="Amount"
-                class="w-24 text-sm"
-                on:keydown={(e) => e.key === 'Enter' && handleUpdate(expense.id)}
-              />
-              <div class="flex gap-1">
-                <button
-                  on:click={() => handleUpdate(expense.id)}
-                  class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-                  title="Save"
-                >
-                  <Check size={16} class="text-green-600" />
-                </button>
-                <button
-                  on:click={() => handleDelete(expense.id)}
-                  class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={16} class="text-red-600" />
-                </button>
-                <button
-                  on:click={cancelEdit}
-                  class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-                  title="Cancel"
-                >
-                  <X size={16} />
-                </button>
+            <div class="flex flex-1 items-end gap-2 pl-4">
+              <div class="flex-1">
+                <Input placeholder="Name" bind:value={name} on:keydown={handleKeyDown} />
               </div>
+              <div class="w-26">
+                <div class="flex items-center bg-transparent">
+                  <div class="text-muted-foreground mr-2 text-sm select-none">
+                    {currencySymbol}
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Amount"
+                    bind:value={amount}
+                    bind:this={amountInput}
+                    formatAsNumber={true}
+                    on:keydown={handleKeyDown}
+                  />
+                </div>
+              </div>
+              <SaveButtons onSave={() => handleUpdate(expense.id)} onCancel={cancelEdit} />
             </div>
           {:else}
             <button
               on:click={() => startEdit(expense)}
-              class="text-foreground hover:bg-muted -mx-3 flex flex-1 items-center justify-between rounded-[0.5em] px-3 py-2 text-left text-sm transition-colors"
+              class="text-foreground hover:bg-muted flex flex-1 items-center justify-between rounded-[0.5em] py-2 text-left text-sm
+              {editingId || isAdding ? 'pr-3 pl-4' : 'px-3'}"
             >
               {#if !editingId && !isAdding}
                 <div
@@ -176,43 +177,32 @@
                 {formatCurrency(expense.amount, currencySymbol)}
               </span>
             </button>
+            <DeleteButton onDelete={() => handleDelete(expense.id)} />
           {/if}
         </div>
       {/each}
     </div>
 
     {#if isAdding}
-      <div class="-mx-3 flex w-full items-center gap-2 rounded-[0.5em] px-3 py-2">
-        <Input
-          type="text"
-          bind:value={name}
-          placeholder="Name"
-          class="flex-1 text-sm"
-          on:keydown={(e) => e.key === 'Enter' && handleAdd()}
-        />
-        <Input
-          type="number"
-          bind:value={amount}
-          placeholder="Amount"
-          class="w-24 text-sm"
-          on:keydown={(e) => e.key === 'Enter' && handleAdd()}
-        />
-        <div class="flex gap-1">
-          <button
-            on:click={handleAdd}
-            class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-            title="Save"
-          >
-            <Check size={16} class="text-green-600" />
-          </button>
-          <button
-            on:click={cancelEdit}
-            class="hover:bg-accent flex h-7 w-7 items-center justify-center rounded-md transition-colors"
-            title="Cancel"
-          >
-            <X size={16} />
-          </button>
+      <div class="flex items-end gap-2 pl-4">
+        <div class="flex-1">
+          <Input placeholder="Name" bind:value={name} on:keydown={handleKeyDown} />
         </div>
+        <div class="w-36">
+          <div class="flex items-center bg-transparent">
+            <div class="text-muted-foreground mr-2 text-sm select-none">
+              {currencySymbol}
+            </div>
+            <Input
+              type="text"
+              placeholder="Amount"
+              bind:value={amount}
+              formatAsNumber={true}
+              on:keydown={handleKeyDown}
+            />
+          </div>
+        </div>
+        <SaveButtons onSave={handleAdd} onCancel={cancelEdit} />
       </div>
     {/if}
 

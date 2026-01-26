@@ -6,6 +6,14 @@
   import SettingsModal from './SettingsModal.svelte'
 
   let isSettingsOpen = false
+  let settingsModal
+
+  export const openSettingsToCategories = () => {
+    isSettingsOpen = true
+    if (settingsModal) {
+      settingsModal.openTab('categories')
+    }
+  }
 
   // Initialize theme on mount
   onMount(() => {
@@ -82,4 +90,4 @@
   </main>
 </div>
 
-<SettingsModal isOpen={isSettingsOpen} onClose={closeSettings} />
+<SettingsModal bind:this={settingsModal} isOpen={isSettingsOpen} onClose={closeSettings} />

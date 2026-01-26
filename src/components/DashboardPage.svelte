@@ -20,6 +20,8 @@
   export let year = undefined
   export let month = undefined
 
+  let layoutComponent
+
   const MONTH_NAMES = [
     'Jan',
     'Feb',
@@ -141,7 +143,7 @@
   }
 </script>
 
-<Layout>
+<Layout bind:this={layoutComponent}>
   <MonthNav {year} {month} />
 
   {#key selectedMonthId}

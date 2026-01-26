@@ -10,6 +10,14 @@
   export let isOpen = false
   export let title = ''
   export let onClose = () => {}
+  export let size = 'md' // 'sm', 'md', 'lg', 'xl'
+
+  const sizeClasses = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+  }
 
   const dispatch = createEventDispatcher()
 
@@ -56,23 +64,30 @@
       on:click={handleBackdropClick}
     ></div>
     <div
-      class="bg-card animate-fadeIn relative mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-6 shadow-[var(--shadow-md)]"
+      class="bg-card animate-fadeIn relative mx-4 w-full {sizeClasses[
+        size
+      ]} overflow-hidden rounded-2xl shadow-md"
+      style="height: 600px; max-height: 90vh;"
     >
-      <div class="mb-4 flex items-center justify-between">
-        {#if title}
-          <h2 class="text-foreground text-lg font-semibold">
-            {title}
-          </h2>
-        {/if}
-        <button
-          on:click={handleClose}
-          class="hover:bg-accent ml-auto rounded-lg p-1.5 transition-colors"
-          aria-label="Close modal"
-        >
-          <X size={20} />
-        </button>
+      <div class="flex h-full flex-col">
+        <div class="mb-4 flex flex-shrink-0 items-center justify-between px-6 pt-6">
+          {#if title}
+            <h2 class="text-foreground text-lg font-semibold">
+              {title}
+            </h2>
+          {/if}
+          <button
+            on:click={handleClose}
+            class="hover:bg-accent ml-auto rounded-lg p-1.5 transition-colors"
+            aria-label="Close modal"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 pb-6">
+          <slot />
+        </div>
       </div>
-      <slot />
     </div>
   </div>
 {/if}
