@@ -1,5 +1,5 @@
 <script>
-  import { Plus, GripVertical } from 'lucide-svelte'
+  import { Plus, GripVertical, Copy } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import { formatCurrency } from '../lib/format-utils.js'
@@ -14,6 +14,7 @@
   export let entries = []
   export let totalIncome = 0
   export let isReadOnly = false
+  export let isCurrentMonth = false
   export let onUpdate = () => {}
 
   const flipDurationMs = 0
@@ -25,11 +26,16 @@
     amountInput.focus()
   }
 
+  $: if (isAdding && labelInput) {
+    labelInput.focus()
+  }
+
   let isAdding = false
   let editingId = null
   let label = ''
   let amount = ''
   let amountInput = null
+  let labelInput = null
 
   async function handleAdd() {
     if (!label || !amount || !monthId) {
@@ -81,6 +87,17 @@
   function startAdd() {
     cancelEdit()
     isAdding = true
+  }
+
+  async function copyFromPrevious() {
+    if (!monthId) return
+    try {
+      await api.income.copyFromPrevious(monthId)
+      await onUpdate()
+    } catch (error) {
+      console.error('Failed to copy income:', error)
+      alert('Failed to copy income from previous month')
+    }
   }
 
   function handleDndConsider(e) {
@@ -195,7 +212,12 @@
     {#if isAdding}
       <div class="flex items-end gap-2 pl-4">
         <div class="flex-1">
-          <Input placeholder="Label" bind:value={label} on:keydown={handleKeyDown} />
+          <Input
+            placeholder="Label"
+            bind:value={label}
+            bind:this={labelInput}
+            on:keydown={handleKeyDown}
+          />
         </div>
         <div class="w-36">
           <div class="flex items-center bg-transparent">
@@ -216,7 +238,20 @@
     {/if}
 
     {#if entries.length === 0 && !isAdding}
-      <div class="text-muted-foreground py-6 text-center text-sm">No income entries</div>
+      {#if isCurrentMonth && !isReadOnly}
+        <div class="py-6 text-center">
+          <p class="text-muted-foreground mb-3 text-sm">No income entries</p>
+          <button
+            on:click={copyFromPrevious}
+            class="hover:bg-accent text-foreground inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm transition-colors"
+          >
+            <Copy size={14} />
+            Copy from previous month
+          </button>
+        </div>
+      {:else}
+        <div class="text-muted-foreground py-6 text-center text-sm">No income entries</div>
+      {/if}
     {/if}
   </div>
 

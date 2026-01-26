@@ -1,5 +1,5 @@
 <script>
-  import { Plus, Trash2, Edit2 } from 'lucide-svelte'
+  import { Plus, Trash2, Pen, EllipsisVertical } from 'lucide-svelte'
   import { api } from '../lib/api.js'
   import { settings } from '../stores/settings.js'
   import { formatCurrency } from '../lib/format-utils.js'
@@ -7,7 +7,8 @@
   import Input from './ui/Input.svelte'
   import Select from './ui/Select.svelte'
   import SaveButtons from './ui/SaveButtons.svelte'
-  import DeleteButton from './ui/DeleteButton.svelte'
+  import Modal from './ui/Modal.svelte'
+  import DatePicker from './ui/DatePicker.svelte'
 
   export let monthId
   export let items = []
@@ -24,6 +25,11 @@
 
   let descriptionInput = null
   let amountInput = null
+  let openDropdownId = null
+  let showMoveModal = false
+  let selectedItemToMove = null
+  let availableMonths = []
+  let targetMonthId = ''
 
   $: currencySymbol = $settings.currencySymbol || '฿'
   $: categoryOptions = categories.map((c) => ({ value: c.id, label: c.label }))
@@ -34,7 +40,7 @@
       description,
       amount: parseFloat(amount),
       category_id: categoryId ? parseInt(categoryId) : null,
-      spent_on: spentOn,
+      spent_on: formatDateFromInput(spentOn),
     })
     resetForm()
     await onUpdate()
@@ -46,7 +52,7 @@
       description,
       amount: parseFloat(amount),
       category_id: categoryId ? parseInt(categoryId) : null,
-      spent_on: spentOn,
+      spent_on: formatDateFromInput(spentOn),
     })
     resetForm()
     await onUpdate()
@@ -62,7 +68,7 @@
     description = item.description
     amount = item.amount.toString()
     categoryId = item.category_id ? item.category_id.toString() : ''
-    spentOn = item.spent_on
+    spentOn = formatDateForInput(item.spent_on)
   }
 
   function resetForm() {
@@ -82,12 +88,29 @@
     return `${day}-${month}-${year}`
   }
 
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return ''
+    const parts = dateString.split('-')
+    if (parts.length === 3 && parts[0].length === 4) {
+      // อยู่ในรูปแบบ yyyy-mm-dd แล้ว
+      return dateString
+    }
+    // ถ้าเป็น dd-mm-yyyy แปลงเป็น yyyy-mm-dd
+    if (parts.length === 3 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1]}-${parts[0]}`
+    }
+    return dateString
+  }
+
+  const formatDateFromInput = (dateString) => {
+    if (!dateString) return ''
+    // Input type="date" ให้ค่าเป็น yyyy-mm-dd เสมอ
+    return dateString
+  }
+
   function startAdd() {
     resetForm()
     isAdding = true
-    if (categories.length > 0) {
-      categoryId = categories[0].id.toString()
-    }
   }
 
   const handleKeyDown = (event) => {
@@ -101,6 +124,52 @@
     } else if (event.key === 'Escape') {
       event.preventDefault()
       resetForm()
+    }
+  }
+
+  const toggleDropdown = (itemId) => {
+    openDropdownId = openDropdownId === itemId ? null : itemId
+  }
+
+  const closeDropdown = () => {
+    openDropdownId = null
+  }
+
+  const openMoveModal = async (item) => {
+    selectedItemToMove = item
+    closeDropdown()
+
+    // โหลด months ทั้งหมด
+    try {
+      const response = await fetch('/api/months')
+      const monthsData = await response.json()
+      availableMonths = monthsData.map((m) => ({
+        value: m.id,
+        label: `${m.month}/${m.year}`,
+      }))
+      targetMonthId = monthId.toString()
+      showMoveModal = true
+    } catch (error) {
+      console.error('Failed to load months:', error)
+    }
+  }
+
+  const handleMoveToMonth = async () => {
+    if (!selectedItemToMove || !targetMonthId) return
+
+    try {
+      await fetch(`/api/months/${monthId}/items/${selectedItemToMove.id}/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ target_month_id: parseInt(targetMonthId) }),
+      })
+      showMoveModal = false
+      selectedItemToMove = null
+      await onUpdate()
+    } catch (error) {
+      console.error('Failed to move item:', error)
+      alert('Failed to move transaction')
     }
   }
 
@@ -127,40 +196,25 @@
     {/if}
   </div>
 
-  {#if isAdding && categories.length === 0}
-    <div class="text-muted-foreground py-6 text-center text-sm">
-      <p class="mb-1">No categories available.</p>
-      <p class="text-xs">Please add categories in Settings first.</p>
-      <button on:click={resetForm} class="text-foreground mt-3 text-xs hover:opacity-70">
-        Close
-      </button>
-    </div>
-  {/if}
-
   <table class="w-full text-sm">
     <thead>
       <tr class="border-border border-b">
-        <th class="text-muted-foreground py-3 text-left text-xs font-medium">Date</th>
+        <th class="text-muted-foreground w-22 py-3 text-left text-xs font-medium">Date</th>
         <th class="text-muted-foreground py-3 text-left text-xs font-medium">Description</th>
-        <th class="text-muted-foreground py-3 text-left text-xs font-medium">Category</th>
-        <th class="text-muted-foreground py-3 text-right text-xs font-medium">Amount</th>
+        <th class="text-muted-foreground w-28 py-3 text-left text-xs font-medium">Category</th>
+        <th class="text-muted-foreground w-36 py-3 text-right text-xs font-medium">Amount</th>
         {#if !isReadOnly}
           <th class="w-20"></th>
         {/if}
       </tr>
     </thead>
     <tbody>
-      {#if isAdding && categories.length > 0}
+      {#if isAdding}
         <tr class="hover:bg-accent/50 transition-colors">
-          <td class="py-2">
-            <Input
-              type="date"
-              bind:value={spentOn}
-              className="text-xs"
-              on:keydown={handleKeyDown}
-            />
+          <td class="py-0.5">
+            <DatePicker bind:value={spentOn} className="text-xs" on:keydown={handleKeyDown} />
           </td>
-          <td class="py-2">
+          <td class="py-0.5">
             <Input
               placeholder="Description"
               bind:value={description}
@@ -169,7 +223,7 @@
               on:keydown={handleKeyDown}
             />
           </td>
-          <td class="py-2">
+          <td class="py-0.5">
             <Select
               options={categoryOptions}
               bind:value={categoryId}
@@ -178,7 +232,7 @@
               on:keydown={handleKeyDown}
             />
           </td>
-          <td class="py-2 text-right">
+          <td class="py-0.5 text-right">
             <Input
               type="text"
               placeholder="Amount"
@@ -189,23 +243,22 @@
               on:keydown={handleKeyDown}
             />
           </td>
-          <td class="py-2">
+          <td class="py-0.5">
             <SaveButtons onSave={handleAdd} onCancel={resetForm} />
           </td>
         </tr>
       {/if}
       {#each items as item (item.id)}
-        <tr class="border-border hover:bg-accent/50 border-b transition-colors last:border-0">
+        <tr
+          class="hover:bg-accent/50 transition-colors last:border-0 {editingId !== item.id
+            ? 'border-border border-b '
+            : ''}"
+        >
           {#if editingId === item.id}
-            <td class="py-2">
-              <Input
-                type="date"
-                bind:value={spentOn}
-                className="text-xs"
-                on:keydown={handleKeyDown}
-              />
+            <td class="py-1">
+              <DatePicker bind:value={spentOn} className="text-xs" on:keydown={handleKeyDown} />
             </td>
-            <td class="py-2">
+            <td>
               <Input
                 placeholder="Description"
                 bind:value={description}
@@ -214,7 +267,7 @@
                 on:keydown={handleKeyDown}
               />
             </td>
-            <td class="py-2">
+            <td>
               <Select
                 options={categoryOptions}
                 bind:value={categoryId}
@@ -222,18 +275,19 @@
                 on:keydown={handleKeyDown}
               />
             </td>
-            <td class="py-2 text-right">
+            <td>
               <Input
                 type="text"
                 placeholder="Amount"
                 bind:value={amount}
                 bind:this={amountInput}
                 formatAsNumber={true}
-                className="text-xs text-right"
+                textAlign="right"
+                className="text-xs"
                 on:keydown={handleKeyDown}
               />
             </td>
-            <td class="py-2">
+            <td>
               <SaveButtons onSave={() => handleUpdate(item.id)} onCancel={resetForm} />
             </td>
           {:else}
@@ -261,9 +315,29 @@
                     class="hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-1"
                     disabled={isAdding || editingId}
                   >
-                    <Edit2 size={14} />
+                    <Pen size={14} />
                   </button>
-                  <DeleteButton onDelete={() => handleDelete(item.id)} />
+                  <div class="relative">
+                    <button
+                      on:click|stopPropagation={() => toggleDropdown(item.id)}
+                      class="hover:bg-sand-200 dark:hover:bg-charcoal-800 rounded p-1"
+                      disabled={isAdding || editingId}
+                    >
+                      <EllipsisVertical size={14} />
+                    </button>
+                    {#if openDropdownId === item.id}
+                      <div
+                        class="bg-background border-border absolute right-0 z-10 mt-1 w-40 rounded-md border shadow-lg"
+                      >
+                        <button
+                          on:click={() => openMoveModal(item)}
+                          class="hover:bg-accent text-foreground block w-full px-4 py-2 text-left text-xs"
+                        >
+                          Move to month...
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
                 </div>
               </td>
             {/if}
@@ -281,3 +355,40 @@
     </tbody>
   </table>
 </Card>
+
+<Modal bind:isOpen={showMoveModal} title="Move Transaction" size="sm">
+  <div class="space-y-4">
+    <p class="text-muted-foreground text-sm">Select the month to move this transaction to:</p>
+    {#if selectedItemToMove}
+      <div class="bg-accent/50 rounded-md p-3">
+        <p class="text-foreground text-xs font-medium">{selectedItemToMove.description}</p>
+        <p class="text-muted-foreground text-xs">
+          {formatCurrency(selectedItemToMove.amount, currencySymbol)}
+        </p>
+      </div>
+    {/if}
+    <Select
+      label="Target Month"
+      options={availableMonths}
+      bind:value={targetMonthId}
+      placeholder="Select month"
+    />
+    <div class="flex justify-end gap-2">
+      <button
+        on:click={() => (showMoveModal = false)}
+        class="hover:bg-accent text-foreground rounded-md px-4 py-2 text-sm transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        on:click={handleMoveToMonth}
+        class="bg-foreground text-background rounded-md px-4 py-2 text-sm transition-opacity hover:opacity-90"
+        disabled={!targetMonthId || targetMonthId === monthId.toString()}
+      >
+        Move
+      </button>
+    </div>
+  </div>
+</Modal>
+
+<svelte:window on:click={closeDropdown} />

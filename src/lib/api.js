@@ -133,6 +133,10 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ order }),
       }),
+    copyFromPrevious: (monthId) =>
+      request(`/months/${monthId}/income/copy`, {
+        method: 'POST',
+      }),
   },
 
   items: {

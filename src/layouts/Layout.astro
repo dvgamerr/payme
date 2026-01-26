@@ -14,6 +14,15 @@ const { title = 'PayMe - Budget Tracker' } = Astro.props
     <meta name="description" content="Simple and effective monthly budget tracking" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <script is:inline>
+      // Apply theme before render to prevent flash
+      const theme = localStorage.getItem('payme-theme')
+      const isDark =
+        theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

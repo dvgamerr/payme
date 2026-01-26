@@ -37,6 +37,7 @@
     "@commitlint/config-conventional": "^20.3.1",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
+    "date-picker-svelte": "^2.17.0",
     "drizzle-kit": "^0.31.8",
     "globals": "^17.1.0",
     "husky": "^9.1.7",

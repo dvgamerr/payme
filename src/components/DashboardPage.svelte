@@ -166,6 +166,7 @@
             entries={summary.income_entries}
             totalIncome={summary.total_income}
             isReadOnly={summary.month.is_closed}
+            {isCurrentMonth}
             onUpdate={refresh}
           />
           {#if isCurrentMonth}
